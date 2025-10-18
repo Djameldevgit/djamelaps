@@ -1,0 +1,27 @@
+{
+  "type": "نوع",
+  "content": "المحتوى",
+  "publishedOn": "نشر في",
+  "at": "في",
+  "statistics": "الإحصائيات",
+  "views": "المشاهدات",
+  "likes": "الإعجابات",
+  "comments": "التعليقات",
+  "description": "الوصف",
+  "readMore": "قراءة المزيد",
+  "hideContent": "إخفاء المحتوى",
+  "features": "الميزات",
+  "offerType": "نوع العرض",
+  "link": "رابط",
+  "visitSite": "زيارة الموقع",
+  "phone": "هاتف",
+  "imageGallery": "معرض الصور",
+  "image": "صورة",
+  "images": "صور",
+  "priceUnits": {
+    "USD": "دولار",
+    "EUR": "يورو",
+    "DZD": "دينار جزائري",
+    "MAD": "درهم مغربي"
+  }
+}

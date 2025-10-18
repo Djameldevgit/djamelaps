@@ -1,0 +1,33 @@
+{
+    "type": "Type",
+    "content": "Contenu",
+    "publishedOn": "Publié le",
+    "at": "à",
+    "statistics": "Statistiques",
+    "views": "Vues",
+    "likes": "J'aime",
+    "comments": "Commentaires",
+    "description": "Description",
+    "readMore": "Lire plus",
+    "hideContent": "Masquer le contenu",
+    "features": "Caractéristiques",
+    "offerType": "Type d'offre",
+    "link": "Lien",
+    "visitSite": "Visiter le site",
+    "phone": "Téléphone",
+    "imageGallery": "Galerie d'images",
+    "image": "image",
+    "images": "images",
+    "priceUnits": {
+      "USD": "USD",
+      "EUR": "EUR",
+      "DZD": "DZD",
+      "MAD": "MAD"
+    },
+    "offerTypes": {
+      "vente": "Vente",
+      "location": "Location",
+      "échange": "Échange",
+      "don": "Don"
+    }
+  }
