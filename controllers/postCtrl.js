@@ -18,110 +18,111 @@ class APIfeatures {
 }
 
 const postCtrl = {
-   // ❌ PROBLEMA: Estructura de datos inconsistente
- // ✅ BACKEND CORREGIDO - createPost
-createPost: async (req, res) => {
-    try {
-        // ✅ RECIBIR DATOS DIRECTAMENTE, NO DENTRO DE postData
-        const { 
-            content, title, link, description, price, 
-            unidaddeprecio, oferta, telefono, features, images 
-        } = req.body;
+    createPost: async (req, res) => {
+        try {
+            const {   content, 
+                images, 
+                title,
+                price,
+                unidaddeprecio,
+                oferta,
+                features
+              } = req.body
 
-        // ✅ VALIDAR CAMPOS OBLIGATORIOS
-        if (!content || !title || !images || images.length === 0) {
-            return res.status(400).json({ 
-                msg: "Content, title, and images are required" 
-            });
+            if(images.length === 0)
+            return res.status(400).json({msg: "Please add your photo."})
+
+            const newPost = new Posts({
+                content, 
+                images, 
+                title,
+                price,
+                unidaddeprecio,
+                oferta,
+                features,
+                 user: req.user._id
+            })
+            await newPost.save()
+
+            res.json({
+                msg: 'Created Post!',
+                newPost: {
+                    ...newPost._doc,
+                    user: req.user
+                }
+            })
+        } catch (err) {
+            return res.status(500).json({msg: err.message})
         }
+    },
+    getPosts: async (req, res) => {
+        try {
+            const features =  new APIfeatures(Posts.find({
+                 
+            }), req.query).paginating()
 
-        const newPost = new Posts({
-            content, title, link, description, price,
-            unidaddeprecio, oferta, telefono, features, images,
-            user: req.user._id,
-        });
+            const posts = await features.query.sort('-createdAt')
+            .populate("user likes", "avatar username fullname followers")
+            .populate({
+                path: "comments",
+                populate: {
+                    path: "user likes",
+                    select: "-password"
+                }
+            })
 
-        await newPost.save();
-        
-        // ✅ POPULAR EL USUARIO PARA LA RESPUESTA
-        await newPost.populate('user', 'avatar username');
+            res.json({
+                msg: 'Success!',
+                result: posts.length,
+                posts
+            })
 
-        res.json({
-            msg: 'Post created successfully',
-            newPost: newPost
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ msg: err.message });
-    }
-},
-
-// ✅ BACKEND CORREGIDO - updatePost  
-updatePost: async (req, res) => {
-    try {
-        // ✅ RECIBIR DATOS DIRECTAMENTE
-        const { 
-            content, title, link, description, price, 
-            unidaddeprecio, oferta, telefono, features, images 
-        } = req.body;
-
-        const post = await Posts.findOneAndUpdate(
-            { _id: req.params.id },
-            {
-                content, title, link, description, price,
-                unidaddeprecio, oferta, telefono, features, images
-            },
-            { new: true }
-        )
-        .populate("user likes", "avatar username")
-        .populate({
-            path: "comments",
-            populate: {
-                path: "user likes",
-                select: "-password"
-            }
-        });
-
-        if (!post) {
-            return res.status(404).json({ msg: "Post not found" });
+        } catch (err) {
+            return res.status(500).json({msg: err.message})
         }
+    },
+    updatePost: async (req, res) => {
+        try {
+            const {  content, 
+                images, 
+                title,
+                price,
+                unidaddeprecio,
+                oferta,
+                features  } = req.body
 
-        res.json({
-            msg: "Post updated successfully",
-            newPost: post
-        });
+            const post = await Posts.findOneAndUpdate({_id: req.params.id}, {
+                content, 
+                images, 
+                title,
+                price,
+                unidaddeprecio,
+                oferta,
+                features 
+            }).populate("user likes", "avatar username fullname")
+            .populate({
+                path: "comments",
+                populate: {
+                    path: "user likes",
+                    select: "-password"
+                }
+            })
 
-    } catch (err) {
-        return res.status(500).json({ msg: err.message });
-    }
-},
-        getPosts: async (req, res) => {
-            try {
-                const features =  new APIfeatures(Posts.find(), req.query).paginating()
-    
-                const posts = await features.query.sort('-createdAt')
-                .populate("user likes", "avatar username followers")
-                .populate({
-                    path: "comments",
-                    populate: {
-                        path: "user likes",
-                        select: "-password"
-                    }
-                })
-    
-                res.json({
-                    msg: 'Success!',
-                    result: posts.length,
-                    posts
-                })
-    
-            } catch (err) {
-                return res.status(500).json({msg: err.message})
-            }
-        },
-   // ❌ PROBLEMA: No estás actualizando todos los campos que tienes en el modelo
- 
+            res.json({
+                msg: "Updated Post!",
+                newPost: {
+                    ...post._doc,
+                    title,
+                price,
+                unidaddeprecio,
+                oferta,
+                features ,  content, images
+                }
+            })
+        } catch (err) {
+            return res.status(500).json({msg: err.message})
+        }
+    },
     likePost: async (req, res) => {
         try {
             const post = await Posts.find({_id: req.params.id, likes: req.user._id})
@@ -172,7 +173,7 @@ updatePost: async (req, res) => {
     getPost: async (req, res) => {
         try {
             const post = await Posts.findById(req.params.id)
-            .populate("user likes", "avatar username  followers")
+            .populate("user likes", "avatar username fullname followers")
             .populate({
                 path: "comments",
                 populate: {

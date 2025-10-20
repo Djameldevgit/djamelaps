@@ -419,7 +419,7 @@ const profileinfouser = () => {
             <Button variant="primary" onClick={() => {
               if (navigator.share) {
                 navigator.share({
-                  title: 'Tassili Art',
+                  title: 'DJAMEL APS',
                   text: t('shareAppText', '¡Mira esta increíble aplicación de arte!'),
                   url: window.location.origin,
                 });

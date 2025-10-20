@@ -9,12 +9,34 @@ const OptionsModal = ({
   isPostOwner,
   saved,
   saveLoad,
-  t,
+  t, // Hacer opcional
   onOptionClick,
   onAprove,
   onChatWithAdmin
 }) => {
   if (!show) return null;
+
+  // ✅ Función de traducción por defecto
+  const translate = (key) => {
+    if (typeof t === 'function') {
+      return t(key);
+    }
+    
+    // Traducciones por defecto en inglés
+    const defaultTranslations = {
+      'approvePublication': 'Approve Publication',
+      'editPublication': 'Edit Publication',
+      'deletePublication': 'Delete Publication',
+      'sharePublication': 'Share',
+      'contactAdmin': 'Contact Admin',
+      'savePublication': 'Save',
+      'saved': 'Saved',
+      'cancel': 'Cancel',
+      'reportPublication': 'Report'
+    };
+    
+    return defaultTranslations[key] || key;
+  };
 
   return (
     <div style={{
@@ -70,7 +92,7 @@ const OptionsModal = ({
               <span className="material-icons" style={{ color: '#666' }}>
                 check_circle
               </span>
-              {t('approvePublication')}
+              {translate('approvePublication')} {/* ✅ Usar translate */}
             </button>
           )}
 
@@ -96,7 +118,7 @@ const OptionsModal = ({
                 <span className="material-icons" style={{ color: '#666' }}>
                   edit
                 </span>
-                {t('editPublication')}
+                {translate('editPublication')} {/* ✅ Usar translate */}
               </button>
 
               <button
@@ -118,16 +140,12 @@ const OptionsModal = ({
                 <span className="material-icons" style={{ color: '#e74c3c' }}>
                   delete
                 </span>
-                {t('deletePublication')}
+                {translate('deletePublication')} {/* ✅ Usar translate */}
               </button>
             </>
           )}
 
           {/* Opciones para todos los usuarios */}
-         
-         
-         
-
           <button
             onClick={() => onOptionClick('share')}
             style={{
@@ -147,8 +165,9 @@ const OptionsModal = ({
             <span className="material-icons" style={{ color: '#666' }}>
               share
             </span>
-            {t('sharePublication')}
+            {translate('sharePublication')} {/* ✅ Usar translate */}
           </button>
+
           <button
             onClick={onChatWithAdmin}
             style={{
@@ -168,8 +187,9 @@ const OptionsModal = ({
             <span className="material-icons" style={{ color: '#666' }}>
               admin_panel_settings
             </span>
-            {t('contactAdmin')}
+            {translate('contactAdmin')} {/* ✅ Usar translate */}
           </button>
+
           <button
             onClick={() => onOptionClick('save')}
             style={{
@@ -189,12 +209,9 @@ const OptionsModal = ({
             <span className="material-icons" style={{ color: '#666' }}>
               {saved ? 'bookmark' : 'bookmark_border'}
             </span>
-            {saved ? t('saved') : t('savePublication')}
+            {saved ? translate('saved') : translate('savePublication')} {/* ✅ Usar translate */}
           </button>
 
-        
-       
-        
           <div style={{ padding: '8px 16px', marginTop: '8px' }}>
             <button
               onClick={onClose}
@@ -211,7 +228,7 @@ const OptionsModal = ({
                 transition: 'background-color 0.2s ease'
               }}
             >
-              {t('cancel')}
+              {translate('cancel')} {/* ✅ Usar translate */}
             </button>
           </div>
         </div>

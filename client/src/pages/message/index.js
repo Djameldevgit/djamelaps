@@ -14,7 +14,7 @@ const Message = () => {
 
                     <i className="fas fa-palette text-primary"
                     style={{fontSize: '5rem'}} />
-                    <h4>Art</h4>
+                    <h4>    APS </h4>
 
                 </div>
             </div>

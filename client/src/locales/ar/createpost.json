@@ -1,72 +1,137 @@
 {
-    
+
+  
+      "select_app_type": "اختر نوع التطبيق",
+      
+  
+      "app_marketplace": "🛒 سوق إلكتروني",
+      "app_ecommerce": "🛍️ تجارة إلكترونية",
+      "app_tienda_online": "🏪 متجر online", 
+      "app_venta_productos": "📦 بيع المنتجات",
+      "app_subastas": "🔨 نظام مزادات",
+       
+      "app_red_social": "👥 شبكة اجتماعية",
+      "app_comunidad": "🌐 مجتمع online",
+      "app_foro": "💬 منتدى نقاش",
+      "app_blog": "📝 منصة مدونة",
+      "app_chat_grupal": "💭 دردشة جماعية",
+  
+      "app_web_app": "🌐 تطبيق ويب",
+      "app_site_web": "💻 موقع ويب",
+      "app_pagina_web": "📄 صفحة ويب",
+      "app_portal_web": "🚪 بوابة ويب",
+      
+      
+      "app_android_app": "🤖 تطبيق أندرويد",
+      "app_ios_app": "🍎 تطبيق iOS",
+      "app_mobile_app": "📱 تطبيق جوال", 
+      "app_hibrida_app": "🔀 تطبيق هجين",
  
-        "create_new_post": "إنشاء منشور جديد",
-        "edit_post": "تعديل المنشور",
-        "post_creation_description": "شارك خدمات تطوير التطبيقات الخاصة بك",
-        "edit_post_description": "قم بتحديث منشور تطوير التطبيق الخاص بك",
-        "basic_information": "المعلومات الأساسية",
-        "application_details": "تفاصيل التطبيق",
-        "content": "المحتوى",
-        "content_placeholder": "بماذا تفكر؟",
-        "application_type": "نوع التطبيق",
-        "select_application_type": "اختر نوع التطبيق",
-        "price_unit": "وحدة السعر",
-        "select_price_unit": "اختر وحدة السعر",
-        "offer_type": "نوع العرض",
-        "select_offer_type": "اختر نوع العرض",
-        "application_features": "ميزات التطبيق",
-        "select_features_placeholder": "اختر الميزات...",
-        "images": "الصور",
-        "images_count": "الصور ({{count}})",
-        "update_photos": "تحديث الصور",
-        "add_photos": "إضافة الصور",
-        "cancel": "إلغاء",
-        "update_post": "تحديث المنشور",
-        "create_post": "إنشاء المنشور",
-        "add_photo_error": "يرجى إضافة صورتك.",
-        "image_requirements": "يمكنك رفع عدة صور (5 ميجابايت كحد أقصى لكل صورة)",
-        "debug": "تصحيح",
-        "title": "العنوان",
-        "features": "الميزات",
-        
-        "app_web": "تطبيق ويب",
-        "app_mobile": "تطبيق جوال (iOS/Android)",
-        "app_pwa": "تطبيق PWA (ويب + جوال)",
-        "app_web_responsive": "موقع ويب متجاوب",
-        "app_landing_page": "صفحة هبوط",
-        "app_ecommerce": "متجر إلكتروني",
-        "app_desktop": "تطبيق سطح مكتب",
-        "app_api": "API/خدمة Backend",
-        "app_game": "لعبة ويب/جوال",
-        
-        "millions": "ملايين",
-        "milliard": "مليار",
-        "millions_m2": "ملايين (م²)",
-        
-        "offer_fixed": "ثابت",
-        "offer_negotiable": "قابل للتفاوض",
-        "offer_free": "مجاني",
-        
-        "feature_comments": "نظام التعليقات",
-        "feature_live_chat": "دردشة فورية",
-        "feature_notifications": "نظام الإشعارات",
-        "feature_likes": "الإعجابات/عدم الإعجاب",
-        "feature_save": "حفظ/إزالة الحفظ",
-        "feature_follow": "متابعة/إلغاء المتابعة",
-        "feature_google_login": "تسجيل الدخول بجوجل",
-        "feature_facebook_login": "تسجيل الدخول بفيسبوك",
-        "feature_email_system": "نظام البريد الإلكتروني",
-        "feature_blocking": "نظام الحظر",
-        "feature_admin_panel": "لوحة الإدارة",
-        "feature_user_tracking": "تتبع المستخدمين",
-        "feature_modern_css": "CSS حديث مع React Bootstrap",
-        "feature_database": "قاعدة البيانات",
-        "feature_authentication": "نظام المصادقة",
-        "feature_authorization": "نظام التفويض",
-        "feature_email_verification": "التحقق من البريد الإلكتروني",
-        "feature_user_posts": "المستخدمين ينشرون بحرية",
-        "feature_post_validation": "التحقق من المنشورات"
-      }
+      "app_servicio_online": "⚡ خدمة online",
+      "app_plataforma_educativa": "🎓 منصة تعليمية",
+      "app_sistema_gestion": "📊 نظام إدارة",
+      "app_crm": "👨‍💼 CRM",
+      "app_cms": "📝 CMS",
+      
+ 
+      "app_juego_online": "🎮 لعبة online",
+      "app_streaming": "🎬 منصة بث",
+      "app_musica": "🎵 تطبيق موسيقى",
+      "app_video": "🎥 تطبيق فيديو",
+      
+ 
+      "app_herramienta_productividad": "⚙️ أداة إنتاجية",
+      "app_finanzas": "💰 تطبيق مالي",
+      "app_salud_fitness": "💪 صحة ولياقة",
+      "app_viajes": "✈️ تطبيق سفر",
+      
+ 
+      "app_otro": "❓ نوع آخر",
+      
+ 
+     
+      "project_info_section": "معلومات المشروع",
+      "pricing_section": "معلومات الأسعار",
+      "features_section": "مميزات النظام",
+      "media_section": "وسائط متعددة ولقطات",
+      "currency_label": "العملة",
+      "description_label": "وصف المشروع",
+      "custom_title_label": "عنوان مخصص",
+      "custom_title_helper": "أضف عنوانًا محددًا لمشروعك (اختياري)",
+      "app_type_helper": "اختر نوع التطبيق الذي يصف مشروعك بشكل أفضل",
+      "validation_no_app_type": "يرجى اختيار نوع التطبيق",
+  
+
+  "lect_currency": "اختر العملة",
+      "dinar_argelia": "دينار جزائري (DZD)",
+      "centime_argelia": "سنتيم جزائري",
+      "euro": "يورو (EUR)",
+      "dolar": "دولار أمريكي (USD)",
+      "libra_esterlina": "جنيه إسترليني (GBP)",
+      "yen": "ين ياباني (JPY)",
+      "franco_suizo": "فرنك سويسري (CHF)",
+      "dinar_tunecino": "دينار تونسي (TND)",
+      "dirham_marroqui": "درهم مغربي (MAD)",
+      "rial_saudi": "ريال سعودي (SAR)",
+  
+  
+      "feature_activation": "نظام التفعيل",
+      "feature_encryption": "تشفير البيانات",
+  
+      "feature_multilingual": "نظام متعدد اللغات",
    
-    
+    "create_post": "إنشاء منشور",
+    "edit_post": "تعديل المنشور",
+    "share_your_moment": "شارك لحظتك",
+    "post_title_placeholder": "عنوان منشورك...",
+    "post_content_placeholder": "ما الجديد، {{username}}؟ شارك أفكارك...",
+    "price_label": "السعر",
+    "price_type_label": "نوع السعر",
+    "offer_type_label": "نوع العرض",
+    "features_label": "الميزات",
+    "select_offer_type": "اختر نوع العرض",
+    "select_price_type": "اختر نوع السعر",
+    "fixed_price": "سعر ثابت",
+    "negotiable_price": "سعر قابل للتفاوض",
+    "on_sale": "في عرض",
+    "free": "مجاني",
+    "exchange": "مقايضة",
+    "per_unit": "للقطعة",
+    "per_kg": "لل كيلو",
+    "per_gram": "للغرام",
+    "per_liter": "للتر",
+    "per_hour": "للساعة",
+    "per_day": "لليوم",
+    "per_month": "لشهر",
+    "per_package": "للعبوة",
+    "feature_comments": "التعليقات",
+    "feature_live_chat": "الدردشة المباشرة",
+    "feature_notifications": "الإشعارات",
+    "feature_likes": "الإعجابات",
+    "feature_save": "حفظ",
+    "feature_follow": "متابعة",
+    "feature_google_login": "تسجيل الدخول بجوجل",
+    "feature_facebook_login": "تسجيل الدخول بفيسبوك",
+    "feature_email_system": "نظام البريد الإلكتروني",
+    "feature_blocking": "الحظر",
+    "feature_admin_panel": "لوحة الإدارة",
+    "feature_user_tracking": "تتبع المستخدم",
+    "feature_modern_css": "CSS حديث",
+    "feature_database": "قاعدة البيانات",
+    "feature_authentication": "المصادقة",
+    "feature_authorization": "التفويض",
+    "feature_email_verification": "التحقق من البريد الإلكتروني",
+    "feature_user_posts": "منشورات المستخدم",
+    "feature_post_validation": "التحقق من المنشور",
+    "features_selected_count": "تم اختيار {{count}} ميزة",
+    "add_photos_to_post": "إضافة صور إلى المنشور",
+    "add_more_photos": "إضافة المزيد من الصور",
+    "cancel_button": "إلغاء",
+    "create_post_button": "إنشاء المنشور",
+    "update_post_button": "تحديث",
+    "validation_no_images": "يرجى إضافة صورة واحدة على الأقل",
+    "validation_no_title": "يرجى إضافة عنوان",
+    "file_not_exist": "الملف غير موجود",
+    "image_too_large": "الصورة كبيرة جداً (الحد الأقصى 5 ميجابايت)"
+  }
+ 

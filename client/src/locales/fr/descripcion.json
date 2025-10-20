@@ -1,33 +1,30 @@
 {
+  
     "type": "Type",
     "content": "Contenu",
     "publishedOn": "Publié le",
     "at": "à",
     "statistics": "Statistiques",
     "views": "Vues",
-    "likes": "J'aime",
+    "likes": "J'aimes",
     "comments": "Commentaires",
     "description": "Description",
-    "readMore": "Lire plus",
     "hideContent": "Masquer le contenu",
+    "readMore": "Lire plus",
     "features": "Caractéristiques",
     "offerType": "Type d'offre",
     "link": "Lien",
     "visitSite": "Visiter le site",
     "phone": "Téléphone",
     "imageGallery": "Galerie d'images",
-    "image": "image",
     "images": "images",
-    "priceUnits": {
-      "USD": "USD",
-      "EUR": "EUR",
-      "DZD": "DZD",
-      "MAD": "MAD"
-    },
-    "offerTypes": {
-      "vente": "Vente",
-      "location": "Location",
-      "échange": "Échange",
-      "don": "Don"
-    }
+    "image": "image",
+    "app_type_description": "Catégorie principale du projet",
+    "features_selected": "caractéristiques sélectionnées",
+    "image_gallery_description": "disponibles pour visualisation",
+    "gallery": "Galerie",
+    "additional_info": "Informations Additionnelles",
+    "contact_seller": "Contacter le Vendeur",
+    "share_post": "Partager la Publication"
   }
+ 

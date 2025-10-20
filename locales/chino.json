@@ -2,7 +2,7 @@
 
 	 
 		"emailActivation": {
-		  "subject": "激活您的 Tassili Art 帐户",
+		  "subject": "激活您的 DJAMEL APS 帐户",
 		  "body": "欢迎加入 Tassili Art！为了成为我们艺术社区的一员并使用所有功能，请验证您的帐户。点击下方按钮完成验证：",
 		  "button": "验证帐户",
 		  "alt": "如果按钮无法使用，请将以下链接复制并粘贴到浏览器中以激活您的 Tassili Art 帐户。"

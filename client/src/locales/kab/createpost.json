@@ -1,70 +1,143 @@
 {
-    
-        "create_new_post": "Snulfu-d amasal amaynut",
-        "edit_post": "Ẓreg amasal",
-        "post_creation_description": "Bḍu timahalin-ik n usnulfu n iseqdacen",
-        "edit_post_description": "Leqqem amasal-ik n usnulfu n useqdac",
-        "basic_information": "Talɣut tagejdant",
-        "application_details": "Iselkifen n useqdac",
-        "content": "Agbur",
-        "content_placeholder": "d acu i tetmektayḍ?",
-        "application_type": "Anaw n useqdac",
-        "select_application_type": "Fren anaw n useqdac",
-        "price_unit": "Aferdis n ṣṣman",
-        "select_price_unit": "Fren aferdis n ṣṣman",
-        "offer_type": "Anaw n uɣni",
-        "select_offer_type": "Fren anaw n uɣni",
-        "application_features": "Timellalin n useqdac",
-        "select_features_placeholder": "Fren timellalin...",
-        "images": "Tugniwin",
-        "images_count": "Tugniwin ({{count}})",
-        "update_photos": "Leqqem tugniwin",
-        "add_photos": "Rnu tugniwin",
-        "cancel": "Sefsex",
-        "update_post": "Leqqem amasal",
-        "create_post": "Snulfu-d amasal",
-        "add_photo_error": "Ttxil-k rnu tawlaft-ik.",
-        "image_requirements": "Tzemreḍ ad d-teslideḍ tugniwin waṭas (5MB aṭṭaf s yal yiwen)",
-        "debug": "ASEẒREG",
-        "title": "Azwel",
-        "features": "Timellalin",
-        
-        "app_web": "Asqdac Web",
-        "app_mobile": "Asqdac Aziraz (iOS/Android)",
-        "app_pwa": "Asqdac PWA (Web + Aziraz)",
-        "app_web_responsive": "Asmel web yettwaɛeddan",
-        "app_landing_page": "Asebter aneggal",
-        "app_ecommerce": "Taḥanutt srid (E-commerce)",
-        "app_desktop": "Asqdac n tnarit",
-        "app_api": "API/Ameẓlu Backend",
-        "app_game": "Urar Web/Aziraz",
-        
-        "millions": "Imelyan",
-        "milliard": "Milyar",
-        "millions_m2": "Imelyan (m²)",
-        
-        "offer_fixed": "Yettwasekles",
-        "offer_negotiable": "Yezmer ad yettunefk",
-        "offer_free": "Yettunefk",
-        
-        "feature_comments": "Anagraw n wemmenyafen",
-        "feature_live_chat": "Asefrek deg wakud ilaw",
-        "feature_notifications": "Anagraw n ilɣa",
-        "feature_likes": "Timenɣiwin/Ur tmenɣiw ara",
-        "feature_save": "Sekles/Kkes asekles",
-        "feature_follow": "Ḍfer/Sefsex tḍfera",
-        "feature_google_login": "Tuqqna s Google",
-        "feature_facebook_login": "Tuqqna s Facebook",
-        "feature_email_system": "Anagraw n yimaylen",
-        "feature_blocking": "Anagraw n usewḥel",
-        "feature_admin_panel": "Agrudem n umsengar",
-        "feature_user_tracking": "Aḍebsi n iseqdacen",
-        "feature_modern_css": "CSS amaynut s React Bootstrap",
-        "feature_database": "Talɣut",
-        "feature_authentication": "Anagraw n usentem",
-        "feature_authorization": "Anagraw n tira",
-        "feature_email_verification": "Asentem n yimayl",
-        "feature_user_posts": "Iseqdacen ttarun s lḥurriya",
-        "feature_post_validation": "Asentem n yismal"
+
+
+ 
+      
+      "select_app_type": "Fren anaw n usnas",
+      
+      
+      "app_marketplace": "🛒 Aqettur",
+      "app_ecommerce": "🛍️ E-commerce",
+      "app_tienda_online": "🏪 Aḥanut srid",
+      "app_venta_productos": "📦 Azuzer n ifarisen", 
+      "app_subastas": "🔨 Anagraw n tɣellist",
+      
    
-  }
+      "app_red_social": "👥 Azeṭṭa imettinen",
+      "app_comunidad": "🌐 Tameɣzt srid",
+      "app_foro": "💬 Amgdal n mmeslay",
+      "app_blog": "📝 Amagrad n ublog",
+      "app_chat_grupal": "💭 Amsuluḍ n igrawen",
+      
+     
+      "app_web_app": "🌐 Asnas web",
+      "app_site_web": "💻 Asmel web",
+      "app_pagina_web": "📄 Asebter web",
+      "app_portal_web": "🚪 Anewwur web",
+      
+  
+      "app_android_app": "🤖 Asnas Android",
+      "app_ios_app": "🍎 Asnas iOS",
+      "app_mobile_app": "📱 Asnas aziraz",
+      "app_hibrida_app": "🔀 Asnas amseddal",
+      
+ 
+      "app_servicio_online": "⚡ Awiḍ srid",
+      "app_plataforma_educativa": "🎓 Tafaturt n tmusni",
+      "app_sistema_gestion": "📊 Anagraw n usefrek",
+      "app_crm": "👨‍💼 CRM",
+      "app_cms": "📝 CMS",
+      
+     
+      "app_juego_online": "🎮 Urar srid",
+      "app_streaming": "🎬 Tafaturt n usdiffu",
+      "app_musica": "🎵 Asnas n lmusiqa",
+      "app_video": "🎥 Asnas n video",
+      
+   
+      "app_herramienta_productividad": "⚙️ Abewwu n tnernit",
+      "app_finanzas": "💰 Asnas n leflus",
+      "app_salud_fitness": "💪 Tamentilt & Fitness",
+      "app_viajes": "✈️ Asnas n inezgen",
+      
+   
+      "app_otro": "❓ Anaw-nniḍen",
+      
+    
+
+
+
+
+  "project_info_section": "Talɣut n usenfaṛ",
+    "pricing_section": "Talɣut n ssuma",
+    "features_section": "Timahilin n unagraw",
+    "media_section": "Midya d tuṭṭfa",
+    "currency_label": "Tadbelt",
+    "description_label": "Aglam n usenfaṛ",
+    "custom_title_label": "Azwel udmawan",
+    "custom_title_helper": "Rnu azwel usliɣ i usenfaṛ-nnek (ur yettwasra)",
+    "app_type_helper": "Fren anaw n usnas i d-yeggran s wugar asenfaṛ-nnek",
+    "validation_no_app_type": "Ttxil-k fren anaw n usnas",
+  "select_currency": "Fren tadbelt",
+  "dinar_argelia": "Dinar Taɣerfant (DZD)",
+  "centime_argelia": "Centime Taɣerfant",
+  "euro": "Euro (EUR)",
+  "dolar": "Dular (USD)",
+  "libra_esterlina": "Libra Esterlina (GBP)",
+  "yen": "Yen (JPY)",
+  "franco_suizo": "Franco Swiss (CHF)",
+  "dinar_tunecino": "Dinar Tunsit (TND)",
+  "dirham_marroqui": "Dirham Umṛṛukit (MAD)",
+  "rial_saudi": "Rial Saudi (SAR)",
+   
+      "feature_activation": "Anagraw n usenqed",
+      "feature_encryption": "Aglu n yisefka",
+ 
+      "feature_multilingual": "Anagraw n tutlayin timegrad",
+    
+ 
+        "create_post": "Snulfu-d amezruy",
+        "edit_post": "Ẓreg amezruy",
+        "share_your_moment": "Bḍu tallit-nnek",
+        "post_title_placeholder": "Azwel n wamezruy-nnek...",
+        "post_content_placeholder": "D acu iḍerru, {{username}}? Bḍu iẓuran-nnek...",
+        "price_label": "Ssuma",
+        "price_type_label": "Anaw n ssuma",
+        "offer_type_label": "Anaw n uɣni",
+        "features_label": "Timahilin",
+        "select_offer_type": "Fren anaw n uɣni",
+        "select_price_type": "Fren anaw n ssuma",
+        "fixed_price": "Ssuma yettwasekles",
+        "negotiable_price": "Ssuma yezmer ad yettunefk",
+        "on_sale": "Deg uɣni",
+        "free": "Baṭel",
+        "exchange": "Beddel",
+        "per_unit": "S tayuga",
+        "per_kg": "S kilogram",
+        "per_gram": "S gram",
+        "per_liter": "S litri",
+        "per_hour": "S usrag",
+        "per_day": "S wass",
+        "per_month": "S wayyur",
+        "per_package": "S taneẓruft",
+        "feature_comments": "Iwenniten",
+        "feature_live_chat": "Amsuluḍ s tudert",
+        "feature_notifications": "Ilɣuten",
+        "feature_likes": "Timenɣiwt",
+        "feature_save": "Sekles",
+        "feature_follow": "Ḍfer",
+        "feature_google_login": "Kcem s Google",
+        "feature_facebook_login": "Kcem s Facebook",
+        "feature_email_system": "Anagraw n yimayl",
+        "feature_blocking": "Asewḥel",
+        "feature_admin_panel": "Agalis n umsermad",
+        "feature_user_tracking": "Aḍeffer n useqdac",
+        "feature_modern_css": "CSS amaynut",
+        "feature_database": "Taffa n yisefka",
+        "feature_authentication": "Taseɣtint",
+        "feature_authorization": "Tasarutt",
+        "feature_email_verification": "Asenqed n yimayl",
+        "feature_user_posts": "Imeẓruyen n useqdac",
+        "feature_post_validation": "Asentem n wamezruy",
+        "features_selected_count": "{{count}} n temahilin yettwafernen",
+        "add_photos_to_post": "Rnu tiwlafin ɣer wamezruy",
+        "add_more_photos": "Rnu ugar n twalafin",
+        "cancel_button": "Sefsex",
+        "create_post_button": "Snulfu-d amezruy",
+        "update_post_button": "Leqqem",
+        "validation_no_images": "Ttxil-k rnu talɣa yiwet s wazal",
+        "validation_no_title": "Ttxil-k rnu azwel",
+        "file_not_exist": "Ufaylu ur yella ara",
+        "image_too_large": "Talɣa teɣli bezzaf (5mb aṭas)"
+      }
+  

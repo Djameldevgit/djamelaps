@@ -152,7 +152,10 @@ function App() {
   <Route exact path="/infoaplicacionn" component={appinfo2} />
   <Route exact path="/infoAplicacionn" component={appinfo2} />
   <Route exact path="/appinfo2" component={appinfo2} />
+  
+        <Route path="/edit-post/:id" element={<CreatePost />} />
 
+  <Route path="/create-post" element={<CreatePost />} />
   <Route exact path="/bloqueos404" component={Bloqueos404} />
   <Route exact path="/video/:obraId" component={video} />
   <Route exact path="/forgot_password" component={ForgotPassword} />
@@ -163,8 +166,7 @@ function App() {
   <PrivateRouter exact path="/users/roles" component={PageRender} />
   <PrivateRouter exact path="/users/contactt" component={PageRender} />
   <PrivateRouter exact path="/users/bloqueados" component={PageRender} />
-
-  <Route exact path="/editpost/:id" component={CreatePost} />
+ 
   {/* privadas genéricas */}
   <PrivateRouter exact path="/:page/:id/:tab" component={PageRender} />
   <PrivateRouter exact path="/:page/:id" component={PageRender} />

@@ -13,32 +13,24 @@ export const POST_TYPES = {
 }
 
 
-// src/redux/actions/postAction.js
-export const createPost = ({
-    content, 
+export const createPost = ({  content, 
     images, 
-    title, 
-    unidaddeprecio, 
-    oferta, 
-    features, 
-    auth, 
-    socket
-}) => async (dispatch) => {
+    title,
+    price,
+    unidaddeprecio,
+    oferta,
+    features,
+    auth, socket}) => async (dispatch) => {
     let media = []
     try {
         dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
-        
         if(images.length > 0) media = await imageUpload(images)
 
-        // ✅ ENVIAR TODOS LOS CAMPOS AL BACKEND
-        const res = await postDataAPI('posts', { 
-            content, 
-            title,
+        const res = await postDataAPI('posts', { title,
+            price,
             unidaddeprecio,
             oferta,
-            features,
-            images: media 
-        }, auth.token)
+            features, content, images: media }, auth.token)
 
         dispatch({ 
             type: POST_TYPES.CREATE_POST, 
@@ -54,7 +46,7 @@ export const createPost = ({
             recipients: res.data.newPost.user.followers,
             url: `/post/${res.data.newPost._id}`,
             content, 
-            image: media[0]?.url // ✅ Manejar caso donde no hay imágenes
+            image: media[0].url
         }
 
         dispatch(createNotify({msg, auth, socket}))
@@ -86,20 +78,14 @@ export const getPosts = (token) => async (dispatch) => {
     }
 }
 
-// En tus acciones de post
-// En tus acciones de post (postAction.js)
-// En tu postAction.js - actualiza updatePost
-// src/redux/actions/postAction.js
-export const updatePost = ({
-    content, 
+export const updatePost = ({  content, 
     images, 
-    title, 
-    unidaddeprecio, 
-    oferta, 
-    features, 
-    auth, 
-    status
-}) => async (dispatch) => {
+    title,
+    price,
+    unidaddeprecio,
+    oferta,
+    features,
+    auth,   status}) => async (dispatch) => {
     let media = []
     const imgNewUrl = images.filter(img => !img.url)
     const imgOldUrl = images.filter(img => img.url)
@@ -113,14 +99,15 @@ export const updatePost = ({
         dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
         if(imgNewUrl.length > 0) media = await imageUpload(imgNewUrl)
 
-        // ✅ ENVIAR TODOS LOS CAMPOS AL BACKEND
         const res = await patchDataAPI(`post/${status._id}`, { 
             content, 
+          
             title,
+            price,
             unidaddeprecio,
             oferta,
             features,
-            images: [...imgOldUrl, ...media] 
+             images: [...imgOldUrl, ...media] 
         }, auth.token)
 
         dispatch({ type: POST_TYPES.UPDATE_POST, payload: res.data.newPost })
@@ -133,6 +120,7 @@ export const updatePost = ({
         })
     }
 }
+
 export const likePost = ({post, auth, socket}) => async (dispatch) => {
     const newPost = {...post, likes: [...post.likes, auth.user]}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost})

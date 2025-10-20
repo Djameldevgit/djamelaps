@@ -1,372 +1,154 @@
-// src/pages/CreatePost.js
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useHistory, useParams } from 'react-router-dom'
-import { createPost, updatePost } from '../redux/actions/postAction'
+import { useHistory, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-    Form, 
-    Button, 
-    Card, 
-    Container, 
-    Row, 
-    Col, 
-    Badge,
-    Alert,
-    FloatingLabel
-} from 'react-bootstrap'
+import { GLOBALTYPES } from '../redux/actions/globalTypes'
+import { createPost, updatePost } from '../redux/actions/postAction'
+import { imageShow } from '../utils/mediaShow'
 
 const CreatePost = () => {
-    const { auth, theme, socket, posts } = useSelector(state => state)
+    const { auth, theme, status, socket } = useSelector(state => state)
     const dispatch = useDispatch()
     const history = useHistory()
-    const { id } = useParams()
-    const { t, i18n } = useTranslation('createpost')
+    const location = useLocation()
+    const { t } = useTranslation('createpost')
+
+    // Estados iniciales con los nuevos campos
+    const [content, setContent] = useState('')
+    const [images, setImages] = useState([])
+    const [title, setTitle] = useState('')
+    const [price, setPrice] = useState('')
+    const [priceType, setPriceType] = useState('')
+    const [offerType, setOfferType] = useState('')
+    const [features, setFeatures] = useState([])
     
-    const currentLanguage = i18n.language || 'en'
-    const isRTL = ['ar', 'he'].includes(currentLanguage)
-
-    const isEditMode = !!id
-
-    const [postData, setPostData] = useState({
-        content: '',
-        images: [],
-        title: '',
-        unidaddeprecio: '',
-        oferta: '',
-        features: []
-    })
-
-    // Estilos inline MEJORADOS
-    const styles = {
-        container: {
-            minHeight: '100vh',
-            padding: '20px 0',
-            backgroundColor: '#f8f9fa',
-            direction: isRTL ? 'rtl' : 'ltr'
-        },
-        card: {
-            border: 'none',
-            borderRadius: '15px',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-            overflow: 'hidden',
-            background: theme ? '#1a1a1a' : '#ffffff'
-        },
-        // 🔥 HEADER MEJORADO
-        cardHeader: {
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            padding: '25px 30px',
-            borderBottom: 'none',
-            textAlign: isRTL ? 'right' : 'left',
-            position: 'relative',
-            overflow: 'hidden'
-        },
-        cardHeaderOverlay: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.1)'
-        },
-        cardBody: {
-            padding: '30px',
-            background: theme ? '#1a1a1a' : '#ffffff'
-        },
-        formLabel: {
-            fontWeight: '600',
-            marginBottom: '8px',
-            color: theme ? '#ffffff' : '#2c3e50',
-            textAlign: isRTL ? 'right' : 'left'
-        },
-        formControl: {
-            borderRadius: '10px',
-            border: `1px solid ${theme ? '#444' : '#ddd'}`,
-            padding: '12px 15px',
-            fontSize: '14px',
-            textAlign: isRTL ? 'right' : 'left',
-            filter: theme ? 'invert(1)' : 'invert(0)',
-            color: theme ? 'white' : '#111',
-            background: theme ? 'rgba(255,255,255,0.05)' : '#fff',
-            transition: 'all 0.3s ease'
-        },
-        submitButton: {
-            background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '12px 30px',
-            fontSize: '16px',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            color: 'white'
-        },
-        cancelButton: {
-            background: 'linear-gradient(135deg, #6c757d 0%, #5a6268 100%)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '12px 30px',
-            fontSize: '16px',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            color: 'white'
-        },
-        buttonHover: {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.3)'
-        },
-        // ESTILOS MEJORADOS PARA PREVIEW DE IMÁGENES
-        imagesPreviewContainer: {
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '15px',
-            marginTop: '15px',
-            padding: '20px',
-            backgroundColor: theme ? 'rgba(255,255,255,0.05)' : '#f8f9fa',
-            borderRadius: '12px',
-            border: `2px dashed ${theme ? '#555' : '#dee2e6'}`,
-            minHeight: '150px'
-        },
-        imagePreviewWrapper: {
-            position: 'relative',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-            transition: 'all 0.3s ease',
-            border: `2px solid ${theme ? '#444' : '#fff'}`,
-            width: '120px',
-            height: '120px',
-            cursor: 'pointer'
-        },
-        imagePreview: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-            transition: 'transform 0.3s ease'
-        },
-        imageOverlay: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(231, 76, 60, 0.9) 0%, rgba(192, 57, 43, 0.9) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: 0,
-            transition: 'all 0.3s ease',
-            borderRadius: '10px'
-        },
-        deleteButton: {
-            backgroundColor: 'transparent',
-            border: '2px solid white',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: 'white',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            transition: 'all 0.3s ease'
-        },
-        uploadButton: {
-            background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '12px 25px',
-            color: 'white',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer'
-        },
-        imageCountBadge: {
-            position: 'absolute',
-            top: '8px',
-            left: isRTL ? 'auto' : '8px',
-            right: isRTL ? '8px' : 'auto',
-            background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
-            color: 'white',
-            borderRadius: '12px',
-            padding: '3px 10px',
-            fontSize: '11px',
-            fontWeight: '600',
-            zIndex: 2,
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-        },
-        sectionTitle: {
-            color: theme ? '#ffffff' : '#2c3e50',
-            fontSize: '18px',
-            fontWeight: '700',
-            margin: '25px 0 20px 0',
-            paddingBottom: '12px',
-            borderBottom: `3px solid ${theme ? '#e74c3c' : '#e74c3c'}`,
-            textAlign: isRTL ? 'right' : 'left',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-        },
-        debugBox: {
-            backgroundColor: theme ? '#2c3e50' : '#e9ecef',
-            border: `1px solid ${theme ? '#34495e' : '#dee2e6'}`,
-            borderRadius: '10px',
-            padding: '15px',
-            marginBottom: '20px',
-            color: theme ? '#ffffff' : '#2c3e50'
-        },
-        emptyState: {
-            textAlign: 'center',
-            padding: '40px 20px',
-            color: theme ? '#bdc3c7' : '#6c757d',
-            width: '100%'
-        },
-        emptyStateIcon: {
-            fontSize: '52px',
-            marginBottom: '15px',
-            opacity: 0.6,
-            color: theme ? '#7f8c8d' : '#95a5a6'
-        },
-        // 🔥 NUEVO ESTILO PARA EL BOTÓN DE CERRAR DEL HEADER
-        closeButton: {
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '20px',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(10px)'
-        }
-    }
-
-    // 🔥 FUNCIÓN CORREGIDA PARA ELIMINACIÓN INDIVIDUAL DE IMÁGENES
-    const deleteImage = (index) => {
-        console.log('🗑️ Eliminando imagen en índice:', index);
-        console.log('📸 Imágenes antes de eliminar:', postData.images);
+    // Opciones para tipos de aplicaciones/proyectos
+    const apptitleOptions = [
+        { value: '', label: t('select_app_type') },
         
-        // Crear una nueva array sin la imagen en el índice especificado
-        const updatedImages = postData.images.filter((_, imgIndex) => imgIndex !== index);
+        // Marketplaces y E-commerce
+        { value: 'marketplace', label: t('app_marketplace') },
+        { value: 'ecommerce', label: t('app_ecommerce') },
+        { value: 'tienda-online', label: t('app_tienda_online') },
+        { value: 'venta-productos', label: t('app_venta_productos') },
+        { value: 'subastas', label: t('app_subastas') },
         
-        console.log('🔄 Imágenes después de eliminar:', updatedImages);
+        // Redes Sociales
+        { value: 'red-social', label: t('app_red_social') },
+        { value: 'comunidad', label: t('app_comunidad') },
+        { value: 'foro', label: t('app_foro') },
+        { value: 'blog', label: t('app_blog') },
+        { value: 'chat-grupal', label: t('app_chat_grupal') },
         
-        setPostData(prev => ({
-            ...prev,
-            images: updatedImages
-        }));
-    }
+        // Aplicaciones Web
+        { value: 'web-app', label: t('app_web_app') },
+        { value: 'site-web', label: t('app_site_web') },
+        { value: 'pagina-web', label: t('app_pagina_web') },
+        { value: 'portal-web', label: t('app_portal_web') },
+        
+        // Aplicaciones Móviles
+        { value: 'android-app', label: t('app_android_app') },
+        { value: 'ios-app', label: t('app_ios_app') },
+        { value: 'mobile-app', label: t('app_mobile_app') },
+        { value: 'hibrida-app', label: t('app_hibrida_app') },
+        
+        // Servicios y Plataformas
+        { value: 'servicio-online', label: t('app_servicio_online') },
+        { value: 'plataforma-educativa', label: t('app_plataforma_educativa') },
+        { value: 'sistema-gestion', label: t('app_sistema_gestion') },
+        { value: 'crm', label: t('app_crm') },
+        { value: 'cms', label: t('app_cms') },
+        
+        // Entretenimiento
+        { value: 'juego-online', label: t('app_juego_online') },
+        { value: 'streaming', label: t('app_streaming') },
+        { value: 'musica', label: t('app_musica') },
+        { value: 'video', label: t('app_video') },
+        
+        // Utilidades
+        { value: 'herramienta-productividad', label: t('app_herramienta_productividad') },
+        { value: 'app-finanzas', label: t('app_finanzas') },
+        { value: 'salud-fitness', label: t('app_salud_fitness') },
+        { value: 'viajes', label: t('app_viajes') },
+        
+        // Otros
+        { value: 'otro', label: t('app_otro') }
+    ]
 
-    // 🔥 NUEVA FUNCIÓN PARA MOSTRAR IMÁGENES ESTILIZADAS
-    const styledImageShow = (src, alt = "Preview") => {
-        return (
-            <img 
-                src={src} 
-                alt={alt}
-                style={styles.imagePreview}
-                onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/120x120/2c3e50/ffffff?text=Image+Error'
-                    e.target.alt = 'Error loading image'
-                }}
-            />
-        )
-    }
+    // Opciones corregidas para tipo de oferta
+    const offerTypeOptions = [
+        { value: '', label: t('select_offer_type') },
+        { value: 'fixed', label: t('fixed_price') },
+        { value: 'negotiable', label: t('negotiable_price') },
+        { value: 'on_sale', label: t('on_sale') },
+        { value: 'free', label: t('free') },
+        { value: 'exchange', label: t('exchange') }
+    ]
 
-    // Opciones para el MultiSelect
-    const featureOptions = [
-        { value: 'comments', label: t('feature_comments') },
-        { value: 'live-chat', label: t('feature_live_chat') },
-        { value: 'notifications', label: t('feature_notifications') },
-        { value: 'likes', label: t('feature_likes') },
+    // Opciones para tipo de precio/unidad
+    const priceTypeOptions = [
+        { value: '', label: t('select_currency') },
+        { value: 'DINAR-argelia', label: t('dinar_argelia') },
+        { value: 'CIENTIME', label: t('centime_argelia') },
+        { value: 'EURO', label: t('euro') },
+        { value: 'DOLAR', label: t('dolar') },
+        { value: 'LIBRA-esterlina', label: t('libra_esterlina') },
+        { value: 'YEN', label: t('yen') },
+        { value: 'FRANCO-suizo', label: t('franco_suizo') },
+        { value: 'DINAR-tunecino', label: t('dinar_tunecino') },
+        { value: 'DIRHAM-marroqui', label: t('dirham_marroqui') },
+        { value: 'RIAL-saudi', label: t('rial_saudi') }
+    ]
+
+    const featuresOptions = [
+        // Categoría: Interacción y Social
+        { value: 'sistema-de-comments', label: t('feature_comments') },
+        { value: 'likes-en-tiempo-real', label: t('feature_likes') },
         { value: 'save', label: t('feature_save') },
         { value: 'follow', label: t('feature_follow') },
-        { value: 'google-login', label: t('feature_google_login') },
-        { value: 'facebook-login', label: t('feature_facebook_login') },
-        { value: 'email-system', label: t('feature_email_system') },
-        { value: 'blocking', label: t('feature_blocking') },
-        { value: 'admin-panel', label: t('feature_admin_panel') },
-        { value: 'user-tracking', label: t('feature_user_tracking') },
-        { value: 'modern-css', label: t('feature_modern_css') },
-        { value: 'database', label: t('feature_database') },
+
+        // Categoría: Comunicación en Tiempo Real
+        { value: 'live-chat-profesional', label: t('feature_live_chat') },
+        { value: 'notifications-en-tiempo-real', label: t('feature_notifications') },
+
+        // Categoría: Autenticación y Seguridad
+        { value: 'registro-con-google-login', label: t('feature_google_login') },
+        { value: 'registro-con-facebook-login', label: t('feature_facebook_login') },
         { value: 'authentication', label: t('feature_authentication') },
         { value: 'authorization', label: t('feature_authorization') },
         { value: 'email-verification', label: t('feature_email_verification') },
+        { value: 'activacion', label: t('feature_activation') },
+        { value: 'incriptacion-de-datos', label: t('feature_encryption') },
+        { value: 'blocking', label: t('feature_blocking') },
+
+        // Categoría: Sistema y Administración
+        { value: 'admin-panel', label: t('feature_admin_panel') },
+        { value: 'user-tracking', label: t('feature_user_tracking') },
+        { value: 'post-validation', label: t('feature_post_validation') },
         { value: 'user-posts', label: t('feature_user_posts') },
-        { value: 'post-validation', label: t('feature_post_validation') }
+
+        // Categoría: Tecnología y Infraestructura
+        { value: 'database-propia-independiente', label: t('feature_database') },
+        { value: 'modern-css', label: t('feature_modern_css') },
+        { value: 'sistema-propio-multiples-lenguajes', label: t('feature_multilingual') },
+        { value: 'envios-de-email-system', label: t('feature_email_system') }
     ]
 
+    const isEdit = location.state?.isEdit || status.onEdit
+    const postToEdit = location.state?.post || status
+
     useEffect(() => {
-        if (isEditMode && id) {
-            loadRealPostData()
-        }
-    }, [isEditMode, id, posts])
-
-    const loadRealPostData = () => {
-        const realPost = posts?.find(post => post._id === id)
-        
-        if (realPost) {
-            setPostData({
-                content: realPost.content || '',
-                images: realPost.images || [],
-                title: realPost.title || '',
-                unidaddeprecio: realPost.unidaddeprecio || '',
-                oferta: realPost.oferta || '',
-                features: realPost.features || []
-            })
-        } else {
-            loadPostFromAPI()
-        }
-    }
-
-    const loadPostFromAPI = async () => {
-        try {
-            const res = await fetch(`/api/post/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${auth.token}`
-                }
-            })
+        if (isEdit && postToEdit) {
+            setContent(postToEdit.content || '')
+            setImages(postToEdit.images || [])
+            setTitle(postToEdit.title || '')
+            setPrice(postToEdit.price || '')
+            setPriceType(postToEdit.priceType || '')
+            setOfferType(postToEdit.offerType || '')
+            setFeatures(postToEdit.features || [])
             
-            if (res.ok) {
-                const data = await res.json()
-                if (data.post) {
-                    setPostData({
-                        content: data.post.content || '',
-                        images: data.post.images || [],
-                        title: data.post.title || '',
-                        unidaddeprecio: data.post.unidaddeprecio || '',
-                        oferta: data.post.oferta || '',
-                        features: data.post.features || []
-                    })
-                }
-            }
-        } catch (error) {
-            console.error('❌ Error en loadPostFromAPI:', error)
         }
-    }
-
-    const handleChangeInput = (e) => {
-        const { name, value } = e.target
-        setPostData(prev => ({
-            ...prev,
-            [name]: value
-        }))
-    }
-
-    const handleFeatureChange = (selectedOptions) => {
-        const selectedValues = selectedOptions ? selectedOptions.map(option => option.value) : []
-        setPostData(prev => ({
-            ...prev,
-            features: selectedValues
-        }))
-    }
+    }, [isEdit, postToEdit])
 
     const handleChangeImages = e => {
         const files = [...e.target.files]
@@ -374,535 +156,682 @@ const CreatePost = () => {
         let newImages = []
 
         files.forEach(file => {
-            if(!file) return err = "File does not exist."
-            if(file.size > 1024 * 1024 * 5){
-                return err = "The image largest is 5mb."
+            if (!file) return err = t('file_not_exist')
+            if (file.size > 1024 * 1024 * 5) {
+                return err = t('image_too_large')
             }
             return newImages.push(file)
         })
 
-        if(err) {
-            dispatch({ 
-                type: 'GLOBALTYPES.ALERT', 
-                payload: {error: err} 
-            })
-            return
+        if (err) dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err } })
+        setImages([...images, ...newImages])
+    }
+
+    const deleteImages = (index) => {
+        const newArr = [...images]
+        newArr.splice(index, 1)
+        setImages(newArr)
+    }
+
+    // Manejar cambios en los checkboxes de features
+    const handleFeatureChange = (e) => {
+        const { value, checked } = e.target
+
+        if (checked) {
+            setFeatures([...features, value])
+        } else {
+            setFeatures(features.filter(feature => feature !== value))
         }
-        
-        setPostData(prev => ({
-            ...prev,
-            images: [...prev.images, ...newImages]
-        }))
     }
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        
-        if(!postData.images || postData.images.length === 0) {
-            return dispatch({ 
-                type: 'GLOBALTYPES.ALERT', 
-                payload: {error: t('add_photo_error')}
+
+        if (images.length === 0) {
+            return dispatch({
+                type: GLOBALTYPES.ALERT,
+                payload: { error: t('validation_no_images') }
             })
         }
 
-        const submitData = {
-            content: postData.content || '',
-            title: postData.title || '',
-            unidaddeprecio: postData.unidaddeprecio || '',
-            oferta: postData.oferta || '',
-            features: postData.features || [],
-            images: postData.images || [],
-            auth
+        // Validación adicional para los nuevos campos
+        if (!title) {
+            return dispatch({
+                type: GLOBALTYPES.ALERT,
+                payload: { error: t('validation_no_app_type') }
+            })
         }
-    
-        if (isEditMode) {
+
+        const postData = {
+            content,
+            images,
+            title,
+            price,
+            priceType,
+            offerType,
+            features,
+              auth
+        }
+
+        if (isEdit && postToEdit) {
             dispatch(updatePost({
-                ...submitData,
-                status: {
-                    _id: id,
-                    content: postData.content || '',
-                    images: postData.images || [],
-                }
+                ...postData,
+                status: { ...postToEdit, onEdit: true }
             }))
         } else {
             dispatch(createPost({
-                ...submitData,
+                ...postData,
                 socket
             }))
         }
-        
-        setPostData({
-            content: '',
-            images: [],
-            title: '',
-            unidaddeprecio: '',
-            oferta: '',
-            features: []
-        })
-        
-        setTimeout(() => {
-            history.push('/')
-        }, 500)
+
+        // Resetear todos los campos
+        setContent('')
+        setImages([])
+        setTitle('')
+        setPrice('')
+        setPriceType('')
+        setOfferType('')
+        setFeatures([])
+    
+        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
+        history.push('/')
     }
 
     const handleCancel = () => {
+        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
         history.goBack()
     }
 
-    const MultiSelect = ({ options, value, onChange, placeholder }) => {
-        const [isOpen, setIsOpen] = useState(false)
-        const selectRef = useRef(null)
-
-        useEffect(() => {
-            const handleClickOutside = (event) => {
-                if (selectRef.current && !selectRef.current.contains(event.target)) {
-                    setIsOpen(false)
-                }
-            }
-            document.addEventListener('mousedown', handleClickOutside)
-            return () => document.removeEventListener('mousedown', handleClickOutside)
-        }, [])
-
-        const selectedValues = Array.isArray(value) ? value : []
-        const selectedOptions = options.filter(option => selectedValues.includes(option.value))
-
-        const toggleOption = (optionValue) => {
-            const newValues = selectedValues.includes(optionValue)
-                ? selectedValues.filter(val => val !== optionValue)
-                : [...selectedValues, optionValue]
-            
-            onChange(newValues.map(val => ({ 
-                value: val, 
-                label: options.find(opt => opt.value === val)?.label || val 
-            })))
-        }
-
-        const removeOption = (optionValue, e) => {
-            e.stopPropagation()
-            const newValues = selectedValues.filter(val => val !== optionValue)
-            onChange(newValues.map(val => ({ 
-                value: val, 
-                label: options.find(opt => opt.value === val)?.label || val 
-            })))
-        }
-
-        return (
-            <div ref={selectRef} className="position-relative">
-                <Form.Control
-                    readOnly
-                    value={selectedOptions.map(opt => opt.label).join(', ')}
-                    placeholder={placeholder}
-                    onClick={() => setIsOpen(!isOpen)}
-                    style={{ 
-                        ...styles.formControl,
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                    }}
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                />
-                
-                {isOpen && (
-                    <Card className="position-absolute w-100 mt-1" style={{ 
-                        zIndex: 1050, 
-                        maxHeight: '200px', 
-                        overflowY: 'auto',
-                        direction: isRTL ? 'rtl' : 'ltr',
-                        background: theme ? '#2c3e50' : '#ffffff'
-                    }}>
-                        <Card.Body className="p-2">
-                            {options.map(option => (
-                                <Form.Check
-                                    key={option.value}
-                                    type="checkbox"
-                                    id={`feature-${option.value}`}
-                                    label={option.label}
-                                    checked={selectedValues.includes(option.value)}
-                                    onChange={() => toggleOption(option.value)}
-                                    className="mb-2"
-                                    style={{ 
-                                        textAlign: isRTL ? 'right' : 'left',
-                                        color: theme ? '#ffffff' : '#000000'
-                                    }}
-                                />
-                            ))}
-                        </Card.Body>
-                    </Card>
-                )}
-
-                {selectedOptions.length > 0 && (
-                    <div className="mt-2 d-flex flex-wrap gap-1">
-                        {selectedOptions.map(option => (
-                            <Badge key={option.value} bg="primary" className="d-flex align-items-center" style={{
-                                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)'
-                            }}>
-                                {option.label}
-                                <span 
-                                    className={isRTL ? "me-1" : "ms-1"}
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={(e) => removeOption(option.value, e)}
-                                >
-                                    &times;
-                                </span>
-                            </Badge>
-                        ))}
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    // 🔥 FUNCIÓN MEJORADA PARA RENDERIZAR IMÁGENES CON ELIMINACIÓN INDIVIDUAL
-    const renderImagePreview = () => {
-        const images = Array.isArray(postData.images) ? postData.images : []
-        
-        if (images.length === 0) {
-            return (
-                <div style={styles.emptyState}>
-                    <i className="fas fa-images" style={styles.emptyStateIcon}></i>
-                    <p style={{fontSize: '16px', margin: 0}}>{t('no_images_uploaded')}</p>
-                    <small style={{opacity: 0.7}}>{t('click_to_upload')}</small>
-                </div>
-            )
-        }
-
-        return (
-            <div style={styles.imagesPreviewContainer}>
-                {images.map((img, index) => (
-                    <div 
-                        key={`image-${index}-${img.url || img.name || index}`}
-                        style={styles.imagePreviewWrapper}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)'
-                            e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)'
-                            const overlay = e.currentTarget.querySelector('.image-overlay')
-                            if (overlay) overlay.style.opacity = '1'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0) scale(1)'
-                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)'
-                            const overlay = e.currentTarget.querySelector('.image-overlay')
-                            if (overlay) overlay.style.opacity = '0'
-                        }}
-                    >
-                        {/* Badge con número de imagen */}
-                        <div style={styles.imageCountBadge}>
-                            {index + 1}
-                        </div>
-                        
-                        {/* IMÁGENES ESTILIZADAS PARA AMBOS MODOS */}
-                        {img.camera ? (
-                            styledImageShow(img.camera, `Image ${index + 1}`)
-                        ) : img.url ? (
-                            styledImageShow(img.url, `Image ${index + 1}`)
-                        ) : (
-                            <img 
-                                src={URL.createObjectURL(img)} 
-                                alt={`Preview ${index + 1}`}
-                                style={styles.imagePreview}
-                                onError={(e) => {
-                                    e.target.src = 'https://via.placeholder.com/120x120/2c3e50/ffffff?text=Image+Error'
-                                }}
-                            />
-                        )}
-                        
-                        {/* Overlay con botón de eliminar - CORREGIDO */}
-                        <div 
-                            className="image-overlay"
-                            style={styles.imageOverlay}
-                        >
-                            <button
-                                style={styles.deleteButton}
-                                onClick={(e) => {
-                                    e.stopPropagation(); // 🔥 IMPORTANTE: Prevenir propagación
-                                    deleteImage(index); // 🔥 Usar la función corregida
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = 'white'
-                                    e.target.style.color = '#e74c3c'
-                                    e.target.style.transform = 'scale(1.2)'
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent'
-                                    e.target.style.color = 'white'
-                                    e.target.style.transform = 'scale(1)'
-                                }}
-                                title={t('delete_image')}
-                            >
-                                ×
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        )
-    }
-
     return (
-        <Container fluid style={styles.container}>
-            <Row className="justify-content-center">
-                <Col lg={8} md={10}>
-                    <Card style={styles.card}>
-                        {/* 🔥 HEADER MEJORADO */}
-                        <Card.Header style={styles.cardHeader}>
-                            <div style={styles.cardHeaderOverlay}></div>
-                            <div className="d-flex justify-content-between align-items-center position-relative">
-                                <div>
-                                    <h2 style={{ 
-                                        margin: 0, 
-                                        fontSize: '28px', 
-                                        fontWeight: '700',
-                                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                                    }}>
-                                        {isEditMode ? t('edit_post') : t('create_new_post')}
-                                    </h2>
-                                    <p style={{ 
-                                        margin: '8px 0 0 0', 
-                                        opacity: 0.9, 
-                                        fontSize: '15px',
-                                        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-                                    }}>
-                                        {isEditMode ? t('edit_post_description') : t('post_creation_description')}
-                                    </p>
-                                </div>
-                                <Button 
-                                    variant="link" 
-                                    className="text-decoration-none p-0"
-                                    onClick={handleCancel}
-                                    style={styles.closeButton}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = 'rgba(255,255,255,0.3)'
-                                        e.target.style.transform = 'rotate(90deg)'
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = 'rgba(255,255,255,0.2)'
-                                        e.target.style.transform = 'rotate(0deg)'
-                                    }}
-                                >
-                                    <i className="fas fa-times"></i>
-                                </Button>
+        <div style={{
+            minHeight: '100vh',
+            background: theme ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            padding: '0.5rem 0.2rem'
+        }}>
+            <div style={{
+                maxWidth: '680px',
+                margin: '0 auto'
+            }}>
+                {/* Header Card */}
+                <div style={{
+                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    padding: '0.5rem',
+                    marginBottom: '1.5rem',
+                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                width: '50px',
+                                height: '50px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                color: 'white'
+                            }}>
+                                {auth.user.username?.[0]?.toUpperCase() || 'U'}
                             </div>
-                        </Card.Header>
+                            <div>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '1.5rem',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontWeight: '700'
+                                }}>
+                                    {isEdit ? t('edit_post') : t('create_post')}
+                                </h3>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.875rem',
+                                    color: theme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'
+                                }}>
+                                    {t('share_your_moment')}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleCancel}
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                background: theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}
+                            onMouseLeave={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main Content Card */}
+                <div style={{
+                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    padding: '0.5rem',
+                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
+                }}>
+                    <form onSubmit={handleSubmit}>
                         
-                        <Card.Body style={styles.cardBody}>
-                            {isEditMode && (
-                                <Alert variant="info" style={styles.debugBox}>
-                                    <small>
-                                        <strong>{t('debug')}:</strong> {t('content')}: "{postData.content}" | 
-                                        {t('title')}: "{postData.title}" | 
-                                        {t('features')}: {Array.isArray(postData.features) ? postData.features.length : 0} | 
-                                        {t('images')}: {Array.isArray(postData.images) ? postData.images.length : 0}
-                                    </small>
-                                </Alert>
+                        {/* Sección: Información del Proyecto */}
+                        <div style={{
+                            marginBottom: '2rem',
+                            padding: '0.5rem',
+                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: '16px',
+                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
+                        }}>
+                            <h4 style={{
+                                margin: '0 0 1.5rem 0',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.25rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <i className="fas fa-info-circle" style={{ color: '#667eea' }}></i>
+                                
+                            </h4>
+
+                            {/* Campo Tipo de Aplicación */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{
+                                    display: 'block',
+                                    marginBottom: '0.75rem',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontWeight: '600',
+                                    fontSize: '1rem'
+                                }}>
+                                    <i className="fas fa-heading" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
+                                    {t('custom_title_label')}
+                                </label>
+                                <select
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1.25rem',
+                                        border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                        borderRadius: '16px',
+                                        fontSize: '1rem',
+                                        background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                        color: theme ? '#fff' : '#1a1a2e',
+                                        transition: 'all 0.3s ease',
+                                        fontFamily: 'inherit'
+                                    }}
+                                    onFocus={e => e.target.style.borderColor = '#667eea'}
+                                    onBlur={e => e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+                                >
+                                    {apptitleOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                             
+                            </div>
+
+                       
+
+                          
+                            <div>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '0.75rem',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontWeight: '600',
+                                    fontSize: '1rem'
+                                }}>
+                                    <i className="fas fa-align-left" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
+                                    {t('description_label')}
+                                </label>
+                                <textarea
+                                    placeholder={t('post_content_placeholder', { username: auth.user.username })}
+                                    value={content}
+                                    onChange={e => setContent(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        minHeight: '120px',
+                                        padding: '1.25rem',
+                                        border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                        borderRadius: '16px',
+                                        fontSize: '1rem',
+                                        resize: 'vertical',
+                                        background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                        color: theme ? '#fff' : '#1a1a2e',
+                                        transition: 'all 0.3s ease',
+                                        fontFamily: 'inherit'
+                                    }}
+                                    onFocus={e => e.target.style.borderColor = '#667eea'}
+                                    onBlur={e => e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Sección: Información de Precios */}
+                        <div style={{
+                            marginBottom: '2rem',
+                            padding: '1.5rem',
+                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: '16px',
+                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
+                        }}>
+                            <h4 style={{
+                                margin: '0 0 1.5rem 0',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.25rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <i className="fas fa-tag" style={{ color: '#667eea' }}></i>
+                                {t('pricing_section')}
+                            </h4>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr 1fr',
+                                gap: '1rem'
+                            }}>
+                                {/* Precio */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        marginBottom: '0.75rem',
+                                        color: theme ? '#fff' : '#1a1a2e',
+                                        fontWeight: '600',
+                                        fontSize: '1rem'
+                                    }}>
+                                        <i className="fas fa-dollar-sign" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
+                                        {t('price_label')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={price}
+                                        onChange={e => setPrice(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '1rem',
+                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                            borderRadius: '12px',
+                                            fontSize: '1rem',
+                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                            color: theme ? '#fff' : '#1a1a2e',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Moneda */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        marginBottom: '0.75rem',
+                                        color: theme ? '#fff' : '#1a1a2e',
+                                        fontWeight: '600',
+                                        fontSize: '1rem'
+                                    }}>
+                                        <i className="fas fa-coins" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
+                                        {t('currency_label')}
+                                    </label>
+                                    <select
+                                        value={priceType}
+                                        onChange={e => setPriceType(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '1rem',
+                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                            borderRadius: '12px',
+                                            fontSize: '1rem',
+                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                            color: theme ? '#fff' : '#1a1a2e',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        {priceTypeOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Tipo de Oferta */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        marginBottom: '0.75rem',
+                                        color: theme ? '#fff' : '#1a1a2e',
+                                        fontWeight: '600',
+                                        fontSize: '1rem'
+                                    }}>
+                                        <i className="fas fa-handshake" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
+                                        {t('offer_type_label')}
+                                    </label>
+                                    <select
+                                        value={offerType}
+                                        onChange={e => setOfferType(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '1rem',
+                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                            borderRadius: '12px',
+                                            fontSize: '1rem',
+                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                            color: theme ? '#fff' : '#1a1a2e',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        {offerTypeOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sección: Características */}
+                        <div style={{
+                            marginBottom: '2rem',
+                            padding: '0.5rem',
+                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: '16px',
+                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
+                        }}>
+                            <h4 style={{
+                                margin: '0 0 1.5rem 0',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.25rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                            }}>
+                                <i className="fas fa-cogs" style={{ color: '#667eea' }}></i>
+                                {t('features_section')}
+                            </h4>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                                gap: '0.75rem',
+                                maxHeight: '400px',
+                                overflowY: 'auto',
+                                padding: '0.5rem'
+                            }}>
+                                {featuresOptions.map(option => (
+                                    <label
+                                        key={option.value}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.75rem',
+                                            padding: '1rem',
+                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.6)',
+                                            borderRadius: '12px',
+                                            border: features.includes(option.value)
+                                                ? '2px solid #667eea'
+                                                : theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (!features.includes(option.value)) {
+                                                e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)'
+                                                e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (!features.includes(option.value)) {
+                                                e.target.style.background = theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.6)'
+                                                e.target.style.borderColor = theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)'
+                                            }
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            value={option.value}
+                                            checked={features.includes(option.value)}
+                                            onChange={handleFeatureChange}
+                                            style={{
+                                                width: '20px',
+                                                height: '20px',
+                                                accentColor: '#667eea',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                        <span style={{
+                                            color: theme ? '#fff' : '#1a1a2e',
+                                            fontSize: '0.95rem',
+                                            fontWeight: features.includes(option.value) ? '600' : '400',
+                                            flex: 1
+                                        }}>
+                                            {option.label}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                            <div style={{
+                                marginTop: '1rem',
+                                fontSize: '0.875rem',
+                                color: theme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                                fontStyle: 'italic',
+                                textAlign: 'center'
+                            }}>
+                                {t('features_selected_count', { count: features.length })}
+                            </div>
+                        </div>
+
+                        {/* Sección: Multimedia */}
+                        <div style={{
+                            marginBottom: '2rem',
+                            padding: '1.5rem',
+                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: '16px',
+                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
+                        }}>
+                            <h4 style={{
+                                margin: '0 0 1.5rem 0',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.25rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <i className="fas fa-images" style={{ color: '#667eea' }}></i>
+                                {t('media_section')}
+                            </h4>
+
+                            {/* Image Preview Grid */}
+                            {images.length > 0 && (
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                    gap: '1rem',
+                                    marginBottom: '1.5rem'
+                                }}>
+                                    {images.map((img, index) => (
+                                        <div key={index} style={{
+                                            position: 'relative',
+                                            borderRadius: '16px',
+                                            overflow: 'hidden',
+                                            aspectRatio: '1',
+                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
+                                        }}>
+                                            <div style={{ width: '100%', height: '100%' }}>
+                                                {img.url ?
+                                                    imageShow(img.url, theme)
+                                                    :
+                                                    imageShow(URL.createObjectURL(img), theme)
+                                                }
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => deleteImages(index)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '8px',
+                                                    right: '8px',
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    border: 'none',
+                                                    background: 'rgba(239, 68, 68, 0.95)',
+                                                    color: 'white',
+                                                    fontSize: '1.25rem',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.3s ease',
+                                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.target.style.transform = 'scale(1.1)'
+                                                    e.target.style.background = 'rgba(220, 38, 38, 0.95)'
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.target.style.transform = 'scale(1)'
+                                                    e.target.style.background = 'rgba(239, 68, 68, 0.95)'
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
 
-                            <Form onSubmit={handleSubmit}>
-                                <h4 style={styles.sectionTitle}>
-                                    {t('basic_information')}
-                                </h4>
-
-                                <FloatingLabel
-                                    controlId="content"
-                                    label={t('content')}
-                                    className="mb-3"
+                            {/* Upload Button */}
+                            <div style={{
+                                position: 'relative'
+                            }}>
+                                <input
+                                    type="file"
+                                    id="fileInput"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleChangeImages}
+                                    style={{ display: 'none' }}
+                                />
+                                <label
+                                    htmlFor="fileInput"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.75rem',
+                                        padding: '1.5rem',
+                                        border: theme ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.15)',
+                                        borderRadius: '16px',
+                                        background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        color: theme ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.target.style.borderColor = '#667eea'
+                                        e.target.style.background = theme ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.05)'
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+                                        e.target.style.background = theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'
+                                    }}
                                 >
-                                    <Form.Control
-                                        as="textarea"
-                                        rows={4}
-                                        name="content"
-                                        value={postData.content || ''}
-                                        placeholder={`${auth.user?.username || 'User'}, ${t('content_placeholder')}`}
-                                        onChange={handleChangeInput}
-                                        style={styles.formControl}
-                                        dir={isRTL ? 'rtl' : 'ltr'}
-                                    />
-                                </FloatingLabel>
+                                    <i className="fas fa-image" style={{ fontSize: '1.5rem', color: '#667eea' }}></i>
+                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>
+                                        {images.length > 0 ? t('add_more_photos') : t('add_photos_to_post')}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
 
-                                <h4 style={styles.sectionTitle}>
-                                    {t('application_details')}
-                                </h4>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <FloatingLabel
-                                            controlId="title"
-                                            label={t('application_type')}
-                                            className="mb-3"
-                                        >
-                                            <Form.Select
-                                                name="title"
-                                                value={postData.title || ''}
-                                                onChange={handleChangeInput}
-                                                style={styles.formControl}
-                                                dir={isRTL ? 'rtl' : 'ltr'}
-                                            >
-                                                <option value="">{t('select_application_type')}</option>
-                                                <option value="Application Web">{t('app_web')}</option>
-                                                <option value="Application Mobile">{t('app_mobile')}</option>
-                                                <option value="Application PWA Web + Mobile">{t('app_pwa')}</option>
-                                                <option value="Site Web Responsive">{t('app_web_responsive')}</option>
-                                                <option value="Page d'atterrissage">{t('app_landing_page')}</option>
-                                                <option value="Boutique en ligne">{t('app_ecommerce')}</option>
-                                                <option value="Application de bureau">{t('app_desktop')}</option>
-                                                <option value="API/Service Backend">{t('app_api')}</option>
-                                                <option value="Jeu Web/Mobile">{t('app_game')}</option>
-                                            </Form.Select>
-                                        </FloatingLabel>
-                                    </Col>
-
-                                    <Col md={6}>
-                                        <FloatingLabel
-                                            controlId="unidaddeprecio"
-                                            label={t('price_unit')}
-                                            className="mb-3"
-                                        >
-                                            <Form.Select
-                                                name="unidaddeprecio"
-                                                value={postData.unidaddeprecio || ''}
-                                                onChange={handleChangeInput}
-                                                style={styles.formControl}
-                                                dir={isRTL ? 'rtl' : 'ltr'}
-                                            >
-                                                <option value="">{t('select_price_unit')}</option>
-                                                <option value="DA">DA</option>
-                                                <option value="Millions">{t('millions')}</option>
-                                                <option value="Milliard">{t('milliard')}</option>
-                                                <option value="DA (m²)">DA (m²)</option>
-                                                <option value="Millions (m²)">{t('millions_m2')}</option>
-                                            </Form.Select>
-                                        </FloatingLabel>
-                                    </Col>
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <FloatingLabel
-                                            controlId="oferta"
-                                            label={t('offer_type')}
-                                            className="mb-3"
-                                        >
-                                            <Form.Select
-                                                name="oferta"
-                                                value={postData.oferta || ''}
-                                                onChange={handleChangeInput}
-                                                style={styles.formControl}
-                                                dir={isRTL ? 'rtl' : 'ltr'}
-                                            >
-                                                <option value="">{t('select_offer_type')}</option>
-                                                <option value="Fixe">{t('offer_fixed')}</option>
-                                                <option value="Négociable">{t('offer_negotiable')}</option>
-                                                <option value="Offert">{t('offer_free')}</option>
-                                            </Form.Select>
-                                        </FloatingLabel>
-                                    </Col>
-
-                                    <Col md={6}>
-                                        <FloatingLabel
-                                            controlId="features"
-                                            label={t('application_features')}
-                                            className="mb-3"
-                                        >
-                                            <MultiSelect
-                                                options={featureOptions}
-                                                value={Array.isArray(postData.features) ? postData.features : []}
-                                                onChange={handleFeatureChange}
-                                                placeholder={t('select_features_placeholder')}
-                                            />
-                                        </FloatingLabel>
-                                    </Col>
-                                </Row>
-
-                                <h4 style={styles.sectionTitle}>
-                                    {t('images')}
-                                </h4>
-
-                                {/* PREVIEW DE IMÁGENES ESTILIZADO Y CORREGIDO */}
-                                <Form.Group className="mb-3">
-                                    <Form.Label style={styles.formLabel}>
-                                        {t('images_count', { count: Array.isArray(postData.images) ? postData.images.length : 0 })}
-                                    </Form.Label>
-                                    {renderImagePreview()}
-                                </Form.Group>
-
-                                <Form.Group className="mb-3">
-                                    <Form.Label 
-                                        htmlFor="file" 
-                                        style={styles.uploadButton}
-                                        onMouseEnter={(e) => {
-                                            e.target.style.transform = 'translateY(-2px)'
-                                            e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.target.style.transform = 'translateY(0)'
-                                            e.target.style.boxShadow = 'none'
-                                        }}
-                                    >
-                                        <i className={`fas fa-cloud-upload-alt ${isRTL ? 'ms-2' : 'me-2'}`} />
-                                        {isEditMode ? t('update_photos') : t('add_photos')}
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="file"
-                                        id="file"
-                                        multiple
-                                        accept="image/*"
-                                        onChange={handleChangeImages}
-                                        style={{display: 'none'}}
-                                    />
-                                    <Form.Text style={{ 
-                                        color: theme ? '#bdc3c7' : '#6c757d', 
-                                        textAlign: isRTL ? 'right' : 'left',
-                                        display: 'block',
-                                        marginTop: '10px',
-                                        fontSize: '13px'
-                                    }}>
-                                        <i className={`fas fa-info-circle ${isRTL ? 'ms-2' : 'me-2'}`} />
-                                        {t('image_requirements')}
-                                    </Form.Text>
-                                </Form.Group>
-
-                                <div className="d-flex gap-2 mt-4">
-                                    <Button 
-                                        variant="secondary" 
-                                        className="flex-fill"
-                                        onClick={handleCancel}
-                                        style={styles.cancelButton}
-                                        onMouseEnter={(e) => {
-                                            e.target.style.transform = 'translateY(-2px)'
-                                            e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.target.style.transform = 'translateY(0)'
-                                            e.target.style.boxShadow = 'none'
-                                        }}
-                                    >
-                                        <i className={`fas fa-times ${isRTL ? 'ms-2' : 'me-2'}`} />
-                                        {t('cancel')}
-                                    </Button>
-                                    <Button 
-                                        variant="primary" 
-                                        className="flex-fill" 
-                                        type="submit"
-                                        style={styles.submitButton}
-                                        onMouseEnter={(e) => {
-                                            e.target.style.transform = 'translateY(-2px)'
-                                            e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.target.style.transform = 'translateY(0)'
-                                            e.target.style.boxShadow = 'none'
-                                        }}
-                                    >
-                                        <i className={`fas ${isEditMode ? 'fa-save' : 'fa-plus'} ${isRTL ? 'ms-2' : 'me-2'}`} />
-                                        {isEditMode ? t('update_post') : t('create_post')}
-                                    </Button>
-                                </div>
-                            </Form>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-        </Container>
+                        {/* Action Buttons */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '1rem',
+                            marginTop: '2rem'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                style={{
+                                    flex: '1',
+                                    padding: '1.25rem',
+                                    border: theme ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid rgba(0, 0, 0, 0.1)',
+                                    borderRadius: '12px',
+                                    background: 'transparent',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={e => {
+                                    e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+                                }}
+                                onMouseLeave={e => {
+                                    e.target.style.background = 'transparent'
+                                }}
+                            >
+                                {t('cancel_button')}
+                            </button>
+                            <button
+                                type="submit"
+                                style={{
+                                    flex: '2',
+                                    padding: '1.25rem',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                                }}
+                                onMouseEnter={e => {
+                                    e.target.style.transform = 'translateY(-2px)'
+                                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)'
+                                }}
+                                onMouseLeave={e => {
+                                    e.target.style.transform = 'translateY(0)'
+                                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
+                                }}
+                            >
+                                {isEdit ? t('update_post_button') : t('create_post_button')}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     )
 }
 

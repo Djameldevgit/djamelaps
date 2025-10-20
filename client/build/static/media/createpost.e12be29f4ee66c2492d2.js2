@@ -1,0 +1,364 @@
+import React, { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { useHistory, useLocation } from 'react-router-dom'
+import { GLOBALTYPES } from '../redux/actions/globalTypes'
+import { createPost, updatePost } from '../redux/actions/postAction'
+import { imageShow } from '../utils/mediaShow'
+
+const CreatePost = () => {
+    const { auth, theme, status, socket } = useSelector(state => state)
+    const dispatch = useDispatch()
+    const history = useHistory()
+    const location = useLocation()
+
+    const [content, setContent] = useState('')
+    const [images, setImages] = useState([])
+
+    const isEdit = location.state?.isEdit || status.onEdit
+    const postToEdit = location.state?.post || status
+
+    useEffect(() => {
+        if (isEdit && postToEdit) {
+            setContent(postToEdit.content || '')
+            setImages(postToEdit.images || [])
+        }
+    }, [isEdit, postToEdit])
+
+    const handleChangeImages = e => {
+        const files = [...e.target.files]
+        let err = ""
+        let newImages = []
+
+        files.forEach(file => {
+            if(!file) return err = "File does not exist."
+            if(file.size > 1024 * 1024 * 5){
+                return err = "The image largest is 5mb."
+            }
+            return newImages.push(file)
+        })
+
+        if(err) dispatch({ type: GLOBALTYPES.ALERT, payload: {error: err} })
+        setImages([...images, ...newImages])
+    }
+
+    const deleteImages = (index) => {
+        const newArr = [...images]
+        newArr.splice(index, 1)
+        setImages(newArr)
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        
+        if(images.length === 0) {
+            return dispatch({ 
+                type: GLOBALTYPES.ALERT, payload: {error: "Please add your photo."}
+            })
+        }
+
+        if(isEdit && postToEdit){
+            dispatch(updatePost({
+                content, 
+                images, 
+                auth, 
+                status: { ...postToEdit, onEdit: true }
+            }))
+        } else {
+            dispatch(createPost({
+                content, 
+                images, 
+                auth, 
+                socket
+            }))
+        }
+
+        setContent('')
+        setImages([])
+        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
+        history.push('/')
+    }
+
+    const handleCancel = () => {
+        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
+        history.goBack()
+    }
+
+    return (
+        <div style={{
+            minHeight: '100vh',
+            background: theme ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            padding: '2rem 1rem'
+        }}>
+            <div style={{
+                maxWidth: '680px',
+                margin: '0 auto'
+            }}>
+                {/* Header Card */}
+                <div style={{
+                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    padding: '1.5rem',
+                    marginBottom: '1.5rem',
+                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                width: '50px',
+                                height: '50px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                color: 'white'
+                            }}>
+                                {auth.user.username?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '1.5rem',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontWeight: '700'
+                                }}>
+                                    {isEdit ? 'Edit Post' : 'Create Post'}
+                                </h3>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.875rem',
+                                    color: theme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'
+                                }}>
+                                    Share your moment
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleCancel}
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                background: theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}
+                            onMouseLeave={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main Content Card */}
+                <div style={{
+                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    padding: '2rem',
+                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
+                }}>
+                    <form onSubmit={handleSubmit}>
+                        {/* Textarea */}
+                        <textarea
+                            placeholder={`What's on your mind, ${auth.user.username}?`}
+                            value={content}
+                            onChange={e => setContent(e.target.value)}
+                            style={{
+                                width: '100%',
+                                minHeight: '150px',
+                                padding: '1.25rem',
+                                border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
+                                borderRadius: '16px',
+                                fontSize: '1.1rem',
+                                resize: 'vertical',
+                                background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                                color: theme ? '#fff' : '#1a1a2e',
+                                transition: 'all 0.3s ease',
+                                fontFamily: 'inherit',
+                                marginBottom: '1.5rem'
+                            }}
+                            onFocus={e => e.target.style.borderColor = '#667eea'}
+                            onBlur={e => e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+                        />
+
+                        {/* Image Preview Grid */}
+                        {images.length > 0 && (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                gap: '1rem',
+                                marginBottom: '1.5rem'
+                            }}>
+                                {images.map((img, index) => (
+                                    <div key={index} style={{
+                                        position: 'relative',
+                                        borderRadius: '16px',
+                                        overflow: 'hidden',
+                                        aspectRatio: '1',
+                                        background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
+                                    }}>
+                                        <div style={{ width: '100%', height: '100%' }}>
+                                            {img.url ? 
+                                                imageShow(img.url, theme)
+                                            : 
+                                                imageShow(URL.createObjectURL(img), theme)
+                                            }
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => deleteImages(index)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '8px',
+                                                right: '8px',
+                                                width: '32px',
+                                                height: '32px',
+                                                borderRadius: '50%',
+                                                border: 'none',
+                                                background: 'rgba(239, 68, 68, 0.95)',
+                                                color: 'white',
+                                                fontSize: '1.25rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'all 0.3s ease',
+                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.target.style.transform = 'scale(1.1)'
+                                                e.target.style.background = 'rgba(220, 38, 38, 0.95)'
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.target.style.transform = 'scale(1)'
+                                                e.target.style.background = 'rgba(239, 68, 68, 0.95)'
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upload Button */}
+                        <div style={{
+                            position: 'relative',
+                            marginBottom: '2rem'
+                        }}>
+                            <input
+                                type="file"
+                                id="fileInput"
+                                multiple
+                                accept="image/*"
+                                onChange={handleChangeImages}
+                                style={{ display: 'none' }}
+                            />
+                            <label
+                                htmlFor="fileInput"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.75rem',
+                                    padding: '1.25rem',
+                                    border: theme ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.15)',
+                                    borderRadius: '16px',
+                                    background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    color: theme ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                                }}
+                                onMouseEnter={e => {
+                                    e.target.style.borderColor = '#667eea'
+                                    e.target.style.background = theme ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.05)'
+                                }}
+                                onMouseLeave={e => {
+                                    e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+                                    e.target.style.background = theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'
+                                }}
+                            >
+                                <i className="fas fa-image" style={{ fontSize: '1.5rem', color: '#667eea' }}></i>
+                                <span style={{ fontSize: '1rem', fontWeight: '500' }}>
+                                    {images.length > 0 ? 'Add more photos' : 'Add photos to your post'}
+                                </span>
+                            </label>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '1rem'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                style={{
+                                    flex: '1',
+                                    padding: '1rem',
+                                    border: theme ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid rgba(0, 0, 0, 0.1)',
+                                    borderRadius: '12px',
+                                    background: 'transparent',
+                                    color: theme ? '#fff' : '#1a1a2e',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={e => {
+                                    e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+                                }}
+                                onMouseLeave={e => {
+                                    e.target.style.background = 'transparent'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                style={{
+                                    flex: '2',
+                                    padding: '1rem',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                                }}
+                                onMouseEnter={e => {
+                                    e.target.style.transform = 'translateY(-2px)'
+                                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)'
+                                }}
+                                onMouseLeave={e => {
+                                    e.target.style.transform = 'translateY(0)'
+                                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
+                                }}
+                            >
+                                {isEdit ? '✨ Update Post' : '🚀 Create Post'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default CreatePost
