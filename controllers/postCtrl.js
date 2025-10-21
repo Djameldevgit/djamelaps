@@ -20,26 +20,14 @@ class APIfeatures {
 const postCtrl = {
     createPost: async (req, res) => {
         try {
-            const {   content, 
-                images, 
-                title,
-                price,
-                unidaddeprecio,
-                oferta,
-                features
+            const { content,title,link,price,priceType,offerType,features,images
               } = req.body
 
             if(images.length === 0)
             return res.status(400).json({msg: "Please add your photo."})
 
             const newPost = new Posts({
-                content, 
-                images, 
-                title,
-                price,
-                unidaddeprecio,
-                oferta,
-                features,
+                content,title,link,price,priceType,offerType,features,images,
                  user: req.user._id
             })
             await newPost.save()
@@ -83,22 +71,10 @@ const postCtrl = {
     },
     updatePost: async (req, res) => {
         try {
-            const {  content, 
-                images, 
-                title,
-                price,
-                unidaddeprecio,
-                oferta,
-                features  } = req.body
+            const { content,title,link,price,priceType,offerType,features,images  } = req.body
 
             const post = await Posts.findOneAndUpdate({_id: req.params.id}, {
-                content, 
-                images, 
-                title,
-                price,
-                unidaddeprecio,
-                oferta,
-                features 
+                content,title,link,price,priceType,offerType,features,images
             }).populate("user likes", "avatar username fullname")
             .populate({
                 path: "comments",
@@ -112,11 +88,7 @@ const postCtrl = {
                 msg: "Updated Post!",
                 newPost: {
                     ...post._doc,
-                    title,
-                price,
-                unidaddeprecio,
-                oferta,
-                features ,  content, images
+                    content,title,link,price,priceType,offerType,features,images
                 }
             })
         } catch (err) {

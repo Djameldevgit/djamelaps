@@ -3,14 +3,15 @@ const mongoose = require('mongoose')
 const postSchema = new mongoose.Schema({
     content: String,
     title: String,
+    link: String,
     price: String,
-    unidaddeprecio: String,
-    oferta: String,
-   
-   
+    priceType: String,
+    offerType: String,
+
+
     features: {
         type: Array,
-        
+
     },
 
     images: {
@@ -19,7 +20,7 @@ const postSchema = new mongoose.Schema({
     },
     likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
     comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
-    user: {type: mongoose.Types.ObjectId, ref: 'user'}
+    user: { type: mongoose.Types.ObjectId, ref: 'user' }
 }, {
     timestamps: true
 })

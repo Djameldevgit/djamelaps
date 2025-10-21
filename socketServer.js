@@ -92,24 +92,78 @@ const SocketServer = (socket) => {
 
     // Likes - Funciones existentes
     socket.on('likePost', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
-        const clients = users.filter(user => ids.includes(user.id))
-
-        if(clients.length > 0){
-            clients.forEach(client => {
-                socket.to(`${client.socketId}`).emit('likeToClient', newPost)
-            })
+        try {
+            console.log('🔍 DEBUG likePost - newPost:', newPost);
+            console.log('🔍 DEBUG likePost - user.followers:', newPost.user ? newPost.user.followers : 'UNDEFINED');
+            
+            // ✅ SOLUCIÓN CON VALIDACIÓN
+            let followers = [];
+            if (newPost.user && newPost.user.followers) {
+                if (Array.isArray(newPost.user.followers)) {
+                    followers = newPost.user.followers;
+                } else {
+                    console.log('❌ likePost - followers NO es array:', typeof newPost.user.followers);
+                    if (typeof newPost.user.followers === 'string') {
+                        followers = [newPost.user.followers];
+                    } else if (newPost.user.followers instanceof Object) {
+                        followers = Object.values(newPost.user.followers);
+                    }
+                }
+            }
+            
+            const userId = newPost.user ? newPost.user._id : null;
+            const ids = userId ? [...followers, userId] : followers;
+            
+            console.log('🔍 DEBUG likePost - ids:', ids);
+            
+            const clients = users.filter(user => ids.includes(user.id))
+    
+            if(clients.length > 0){
+                clients.forEach(client => {
+                    socket.to(client.socketId).emit('likeToClient', newPost)
+                })
+            }
+            
+        } catch (error) {
+            console.error('❌ ERROR en likePost:', error);
         }
     })
-
+    
     socket.on('unLikePost', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
-        const clients = users.filter(user => ids.includes(user.id))
-
-        if(clients.length > 0){
-            clients.forEach(client => {
-                socket.to(`${client.socketId}`).emit('unLikeToClient', newPost)
-            })
+        try {
+            console.log('🔍 DEBUG unLikePost - newPost:', newPost);
+            console.log('🔍 DEBUG unLikePost - user.followers:', newPost.user ? newPost.user.followers : 'UNDEFINED');
+            
+            // ✅ SOLUCIÓN CON VALIDACIÓN
+            let followers = [];
+            if (newPost.user && newPost.user.followers) {
+                if (Array.isArray(newPost.user.followers)) {
+                    followers = newPost.user.followers;
+                } else {
+                    console.log('❌ unLikePost - followers NO es array:', typeof newPost.user.followers);
+                    if (typeof newPost.user.followers === 'string') {
+                        followers = [newPost.user.followers];
+                    } else if (newPost.user.followers instanceof Object) {
+                        followers = Object.values(newPost.user.followers);
+                    }
+                }
+            }
+            
+            const userId = newPost.user ? newPost.user._id : null;
+            const ids = userId ? [...followers, userId] : followers;
+            
+            console.log('🔍 DEBUG unLikePost - ids:', ids);
+            
+            const clients = users.filter(user => ids.includes(user.id))
+    
+            if(clients.length > 0){
+                clients.forEach(client => {
+                    socket.to(client.socketId).emit('unLikeToClient', newPost)
+                })
+            }
+            
+        } catch (error) {
+            console.error('❌ ERROR en unLikePost:', error);
         }
     })
 

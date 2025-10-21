@@ -1,553 +1,723 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+import { 
+  Card, 
+  Button, 
+  Row, 
+  Col, 
+  Badge,
+  OverlayTrigger,
+  Tooltip,
+  Dropdown,
+  Alert
+} from 'react-bootstrap';
 import LikeButton from '../../LikeButton';
 import { useSelector, useDispatch } from 'react-redux';
-import { likePost, unLikePost, savePost, unSavePost } from '../../../redux/actions/postAction';
+import { likePost, unLikePost, savePost, unSavePost, updatePost } from '../../../redux/actions/postAction';
 import Carousel from '../../Carousel';
 import AuthModalAddLikesCommentsSave from '../../AuthModalAddLikesCommentsSave';
-import CardFooterPost from './CardFooterPost';
+import CommentsModal from './CommentsModal';
 import ShareModal from '../../ShareModal';
 import { BASE_URL } from '../../../utils/config';
-import OptionsModal from './OptionsModal';
-
-import CommentsModal from './CommentsModal';
-import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
 import { MESS_TYPES } from '../../../redux/actions/messageAction';
-import { createReport } from '../../../redux/actions/reportUserAction';
+import { useTranslation } from 'react-i18next';
 
-const CardBodyCarousel = ({ post }) => {
-  const history = useHistory();
-  const location = useLocation();
-  const [isLike, setIsLike] = useState(false);
-  const [loadLike, setLoadLike] = useState(false);
-  const { auth, socket, homeUsers, profile, languageReducer } = useSelector(state => state);
-  const dispatch = useDispatch();
-  const [saved, setSaved] = useState(false);
-  const [saveLoad, setSaveLoad] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isShare, setIsShare] = useState(false);
+const CardBodyCarousel = ({ post, hideCard = false }) => {
+    const history = useHistory();
+    const location = useLocation();
+    const dispatch = useDispatch();
+    const { t, i18n } = useTranslation(['descripcion']);
+    const [isLike, setIsLike] = useState(false);
+    const [loadLike, setLoadLike] = useState(false);
+    const { auth, socket, theme } = useSelector(state => state);
+    const [saved, setSaved] = useState(false);
+    const [saveLoad, setSaveLoad] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [isShare, setIsShare] = useState(false);
+    const [showCommentsModal, setShowCommentsModal] = useState(false);
+    const [showDownloadAlert, setShowDownloadAlert] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
+    const [showCustomAlert, setShowCustomAlert] = useState(false);
+    const [customAlertMessage, setCustomAlertMessage] = useState('');
+    const [customAlertVariant, setCustomAlertVariant] = useState('info');
+    const [isInstallingPWA, setIsInstallingPWA] = useState(false);
 
-  // ✅ NUEVOS ESTADOS PARA HEADER Y COMENTARIOS
-  const [showOptionsModal, setShowOptionsModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [showCommentsModal, setShowCommentsModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
+    // Detectar si estamos en la página de detalle del post
+    const isDetailPage = location.pathname === `/post/${post._id}`;
+    
+    // Detectar si es RTL (árabe)
+    const isRTL = i18n.language === 'ar';
+    const getIconClass = (iconName) => {
+        return isRTL ? `${iconName} ms-2` : `${iconName} me-2`;
+    };
+    const getFlexClass = () => isRTL ? 'flex-row-reverse' : 'flex-row';
 
-  const optionsModalRef = useRef(null);
-  const isPostDetailPage = location.pathname === `/post/${post._id}`;
+    // Likes
+    useEffect(() => {
+        if (post.likes.find(like => like._id === auth.user?._id)) {
+            setIsLike(true);
+        } else {
+            setIsLike(false);
+        }
+    }, [post.likes, auth.user?._id]);
 
-  // Cerrar modal de opciones al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (optionsModalRef.current && !optionsModalRef.current.contains(event.target)) {
-        setShowOptionsModal(false);
-      }
+    const handleLike = async (e) => {
+        e.stopPropagation();
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+        if (loadLike) return;
+        setLoadLike(true);
+        await dispatch(likePost({ post, auth, socket }));
+        setLoadLike(false);
     };
 
-    if (showOptionsModal) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showOptionsModal]);
-
-  // Likes
-  useEffect(() => {
-    if (post.likes.find(like => like._id === auth.user?._id)) {
-      setIsLike(true);
-    } else {
-      setIsLike(false);
-    }
-  }, [post.likes, auth.user?._id]);
-
-  // ✅ NUEVA LÓGICA MEJORADA PARA COMENTARIOS
-  const handleCommentClick = useCallback(() => {
-    if (!auth.token) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    const currentPath = window.location.pathname;
-    const isOnPostDetail = currentPath === `/post/${post._id}`;
-
-    if (isOnPostDetail) {
-      // Si YA estás en el detalle, scroll a comentarios en la página
-      const commentsSection = document.getElementById('comments-section');
-      if (commentsSection) {
-        commentsSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    } else {
-      // Si estás en el HOME, mostrar modal DIRECTAMENTE
-      setShowCommentsModal(true);
-    }
-  }, [auth.token, post._id]);
-
-  const handleLike = async (e) => {
-    e.stopPropagation();
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (loadLike) return;
-    setLoadLike(true);
-    await dispatch(likePost({ post, auth, socket }));
-    setLoadLike(false);
-  };
-
-  const handleUnLike = async (e) => {
-    e.stopPropagation();
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (loadLike) return;
-    setLoadLike(true);
-    await dispatch(unLikePost({ post, auth, socket }));
-    setLoadLike(false);
-  };
-
-  // Saved
-  useEffect(() => {
-    if (auth.user?.saved.find(id => id === post._id)) {
-      setSaved(true);
-    } else {
-      setSaved(false);
-    }
-  }, [auth.user?.saved, post._id]);
-
-  const handleSavePost = async (e) => {
-    e.stopPropagation();
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (saveLoad) return;
-    setSaveLoad(true);
-    await dispatch(savePost({ post, auth }));
-    setSaveLoad(false);
-  };
-
-  const handleUnSavePost = async (e) => {
-    e.stopPropagation();
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (saveLoad) return;
-    setSaveLoad(true);
-    await dispatch(unSavePost({ post, auth }));
-    setSaveLoad(false);
-  };
-
-  // ✅ FUNCIONES PARA EL HEADER Y OPCIONES
-  const findCompleteUser = useCallback(() => {
-    const completeUser = profile.users?.find(u => u._id === post.user?._id);
-    return completeUser || post.user;
-  }, [post.user, profile.users]);
-
-  const user = findCompleteUser();
-
-  // Verificar si el usuario actual es el dueño del post o es admin
-  const isPostOwner = auth.user && post.user && auth.user._id === post.user._id;
-  const isAdmin = auth.user && auth.user.role === "admin";
-
-  const adminUser = homeUsers.users?.find(user => user.role === "admin");
-
-  const handleChatWithAdmin = useCallback(() => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    if (!adminUser) {
-      return dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { error: 'No admin available' }
-      });
-    }
-    handleAddUser(adminUser);
-  }, [auth.user, adminUser, dispatch]);
-
-  const handleEditPost = () => {
-    history.push('/createpost', { 
-      isEdit: true, 
-      post: post 
-  });
-
-  }
-  const handleDeletePost = useCallback(() => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      // dispatch(deletePost({ post, auth, socket }));
-      setShowOptionsModal(false);
-    }
-  }, [auth.user, post, auth, socket, dispatch]);
-
-  const handleSubmitReport = useCallback(() => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    if (!reportReason.trim()) {
-      return dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { error: 'Report reason is required' }
-      });
-    }
-
-    const reportData = {
-      postId: post._id,
-      userId: post.user._id,
-      reason: reportReason,
+    const handleUnLike = async (e) => {
+        e.stopPropagation();
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+        if (loadLike) return;
+        setLoadLike(true);
+        await dispatch(unLikePost({ post, auth, socket }));
+        setLoadLike(false);
     };
 
-    dispatch(createReport({ auth, reportData }));
-    setShowReportModal(false);
-    setReportReason('');
-    setShowOptionsModal(false);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: 'Report submitted successfully' }
-    });
-  }, [auth.user, reportReason, post, auth, dispatch]);
+    // Saved
+    useEffect(() => {
+        if (auth.user?.saved.find(id => id === post._id)) {
+            setSaved(true);
+        } else {
+            setSaved(false);
+        }
+    }, [auth.user?.saved, post._id]);
 
-  const handleAddUser = useCallback((user) => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
+    const handleSavePost = async (e) => {
+        e.stopPropagation();
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+        if (saveLoad) return;
+        setSaveLoad(true);
+        await dispatch(savePost({ post, auth }));
+        setSaveLoad(false);
+    };
 
-    dispatch({ type: MESS_TYPES.ADD_USER, payload: { ...user, text: '', media: [] } });
-    history.push(`/message/${user._id}`);
-  }, [auth.user, dispatch, history]);
+    const handleUnSavePost = async (e) => {
+        e.stopPropagation();
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+        if (saveLoad) return;
+        setSaveLoad(true);
+        await dispatch(unSavePost({ post, auth }));
+        setSaveLoad(false);
+    };
 
-  const handleShare = useCallback(() => {
-    setIsShare(true);
-    setShowOptionsModal(false);
-  }, []);
+    const redirectToLogin = () => {
+        history.push('/login');
+        setShowAuthModal(false);
+    };
 
-  const handleContactSeller = useCallback(() => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    handleAddUser(post.user);
-    setShowOptionsModal(false);
-  }, [auth.user, post.user, handleAddUser]);
+    const redirectToRegister = () => {
+        history.push('/register');
+        setShowAuthModal(false);
+    };
 
-  const handleSavePostAction = useCallback(async () => {
-    if (!auth.user) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (saveLoad) return;
+    const closeModal = () => setShowAuthModal(false);
 
-    if (saved) {
-      setSaveLoad(true);
-      await dispatch(unSavePost({ post, auth }));
-      setSaveLoad(false);
-    } else {
-      setSaveLoad(true);
-      await dispatch(savePost({ post, auth }));
-      setSaveLoad(false);
-    }
-    setShowOptionsModal(false);
-  }, [auth.user, saveLoad, saved, dispatch, post, auth]);
+    const handleViewDetails = () => {
+        history.push(`/post/${post._id}`);
+    };
 
-  // Handler para las opciones del modal
-  const handleOptionClick = useCallback((option) => {
-    switch (option) {
-      case 'edit':
-        handleEditPost();
-        break;
-      case 'delete':
-        handleDeletePost();
-        break;
-      case 'contact':
-        handleContactSeller();
-        break;
-      case 'report':
-        setShowReportModal(true);
-        break;
-      case 'share':
-        handleShare();
-        break;
-      case 'save':
-        handleSavePostAction();
-        break;
-      default:
-        break;
-    }
-  }, [handleEditPost, handleDeletePost, handleContactSeller, handleShare, handleSavePostAction]);
+    const handleCommentClick = useCallback(() => {
+        if (!auth.token) {
+            setShowAuthModal(true);
+            return;
+        }
 
-  const formatDate = useCallback((dateString) => {
-    const lang = languageReducer.language || 'en';
-    const options = { day: 'numeric', month: 'short', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString(
-      lang === 'es' ? 'es-ES' : lang === 'ar' ? 'ar-AR' : 'en-US',
-      options
-    );
-  }, [languageReducer.language]);
+        const currentPath = window.location.pathname;
+        const isOnPostDetail = currentPath === `/post/${post._id}`;
 
-  const redirectToLogin = () => {
-    history.push('/login');
-    setShowAuthModal(false);
-  };
-
-  const redirectToRegister = () => {
-    history.push('/register');
-    setShowAuthModal(false);
-  };
-
-  const closeModal = () => setShowAuthModal(false);
-
-  return (
-    <>
-      <div className="card" style={{
-        marginBottom: '24px',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        background: '#ffffff'
-      }}>
-        {/* ✅ HEADER INTEGRADO - Solo mostrar si NO es página de detalle */}
-        {/* ✅ HEADER ESPECIALIZADO PARA APPS */}
-        {!isPostDetailPage && (
-          <div style={{
-            background: "white",
-            padding: "12px 16px 8px 16px",
-            borderBottom: "1px solid #f0f0f0",
-            borderRadius: "12px 12px 0 0",
-          }}>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px"
-            }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                flex: 1,
-                minWidth: 0
-              }}>
-                {/* ✅ ICONO DE APLICACIÓN */}
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "10px",
-                    background: post.appIcon
-                      ? `url(${post.appIcon}) center/cover`
-                      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    border: "2px solid #f8f8f8",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    fontWeight: "bold",
-                    color: "white",
-                    fontSize: "16px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                  }}
-                >
-                  {!post.appIcon && "📱"}
-                </div>
-
-                {/* ✅ INFORMACIÓN DE LA APP */}
-                <div style={{
-                  minWidth: 0,
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px"
-                }}>
-                  {/* Nombre de la App */}
-                  <span style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#333",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis"
-                  }}>
-                    {post.title}
-                  </span>
-
-                  {/* Metadata de la App */}
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "12px",
-                    color: "#666",
-                    flexWrap: "wrap"
-                  }}>
-                    {/* Desarrollador */}
-                    <span style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}>
-                      <span className="material-icons" style={{
-                        fontSize: "12px",
-                        color: "#888"
-                      }}>
-                        person
-                      </span>
-                      <span>{post.developer || 'Developer'}</span>
-                    </span>
-
-                    <span>•</span>
-
-                    {/* Categoría */}
-                    <span style={{
-                      background: "rgba(102, 126, 234, 0.1)",
-                      color: "#667eea",
-                      padding: "2px 6px",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                      fontWeight: "500"
-                    }}>
-                      {post.category || 'App'}
-                    </span>
-
-                    {/* Rating */}
-                    {post.rating && (
-                      <>
-                        <span>•</span>
-                        <span style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "2px"
-                        }}>
-                          <span className="material-icons" style={{
-                            fontSize: "12px",
-                            color: "#ffb400"
-                          }}>
-                            star
-                          </span>
-                          <span>{post.rating}</span>
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Botón de opciones (mantener igual) */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowOptionsModal(true);
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#666",
-                  cursor: "pointer",
-                  padding: "6px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.2s ease",
-                  flexShrink: 0
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "rgba(0, 0, 0, 0.04)";
-                  e.target.style.color = "#333";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "none";
-                  e.target.style.color = "#666";
-                }}
-              >
-                <span className="material-icons" style={{
-                  fontSize: "18px"
-                }}>
-                  more_vert
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Contenido de la imagen */}
-        <div className="card__image" onClick={() => history.push(`/post/${post._id}`)}>
-          <Carousel images={post.images} id={post._id} />
-        </div>
-
-        {/* Acciones */}
-        <div className="card__actions">
-          <div className="card__actions-left">
-            <LikeButton
-              isLike={isLike}
-              handleLike={handleLike}
-              handleUnLike={handleUnLike}
-            />
-            <span className="card__action-count">{post.likes.length}</span>
-
-            <i className="far fa-comment card__action-icon" onClick={handleCommentClick} />
-            <span className="card__action-count">{post.comments.length}</span>
-
-            <i className="fas fa-share card__action-icon" onClick={() => setIsShare(!isShare)} />
-          </div>
-
-          <div className="card__actions-right">
-            {saved
-              ? <i className="fas fa-bookmark card__action-icon" onClick={handleUnSavePost} />
-              : <i className="far fa-bookmark card__action-icon" onClick={handleSavePost} />
+        if (isOnPostDetail) {
+            const commentsSection = document.getElementById('comments-section');
+            if (commentsSection) {
+                commentsSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
             }
-            <span className="card__action-count">{post.saves || 0}</span>
-          </div>
-        </div>
+        } else {
+            setShowCommentsModal(true);
+        }
+    }, [auth.token, post._id]);
 
-        {isShare && <ShareModal url={`${BASE_URL}/post/${post._id}`} />}
+    // 🔷 FUNCIÓN PARA MOSTRAR ALERTAS PERSONALIZADAS
+    const showAlert = (message, variant = 'info') => {
+        setCustomAlertMessage(message);
+        setCustomAlertVariant(variant);
+        setShowCustomAlert(true);
+        setTimeout(() => {
+            setShowCustomAlert(false);
+        }, 3000);
+    };
 
-        <CardFooterPost post={post} />
-      </div>
+    // 🔷 LÓGICA MEJORADA PARA CHAT CON EL DUEÑO (CORREGIDA)
+    const handleAddUser = useCallback((user) => {
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+        dispatch({ type: MESS_TYPES.ADD_USER, payload: { ...user, text: '', media: [] } });
+        history.push(`/message/${user._id}`);
+    }, [auth.user, dispatch, history]);
 
-      {/* ✅ MODALES INTEGRADOS */}
-      <OptionsModal
-        show={showOptionsModal}
-        onClose={() => setShowOptionsModal(false)}
-        innerRef={optionsModalRef}
-        isAdmin={isAdmin}
-        isPostOwner={isPostOwner}
-        saved={saved}
-        saveLoad={saveLoad}
-        onOptionClick={handleOptionClick}
-        onChatWithAdmin={handleChatWithAdmin}
-      />
+    // 🔷 FUNCIÓN CORREGIDA - Maneja tanto eventos como llamadas directas
+    const handleChatWithOwner = (e) => {
+        if (e && e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
 
-      <CommentsModal
-        show={showCommentsModal}
-        onHide={() => setShowCommentsModal(false)}
-        post={post}
-      />
+        if (auth.user._id === post.user?._id) {
+            showAlert(t('cannot_chat_yourself'), 'warning');
+            return;
+        }
 
+        handleAddUser(post.user);
 
+        if (socket) {
+            socket.emit('createConversation', {
+                recipients: [post.user?._id, auth.user._id],
+                postId: post._id,
+                sender: auth.user
+            });
+        }
+    };
 
-      <AuthModalAddLikesCommentsSave
-        showModal={showAuthModal}
-        closeModal={closeModal}
-        redirectToLogin={redirectToLogin}
-        redirectToRegister={redirectToRegister}
-      />
-    </>
-  );
+    // 🔷 NUEVA FUNCIÓN: VISITAR APP CON CAMPO LINK
+    const handleVisitApp = (e) => {
+        e?.stopPropagation();
+        
+        // Usar el campo 'link' del post, si no existe usar 'productionUrl'
+        const appLink = post.link || post.productionUrl;
+        
+        if (appLink) {
+            const finalUrl = appLink.startsWith('http') ? appLink : `https://${appLink}`;
+            window.open(finalUrl, '_blank', 'noopener,noreferrer');
+            
+            // Analytics
+            if (window.gtag) {
+                window.gtag('event', 'visit_app', {
+                    'event_category': 'engagement',
+                    'event_label': post.title,
+                    'post_id': post._id
+                });
+            }
+            
+            showAlert(t('redirecting_to_app'), 'success');
+        } else {
+            showAlert(t('no_app_link'), 'warning');
+        }
+    };
+
+    // 🔷 NUEVA FUNCIÓN: INSTALAR PWA DE LA APLICACIÓN DEL POST
+    const handleInstallPostPWA = async (e) => {
+        e?.stopPropagation();
+        
+        if (isInstallingPWA) return;
+        
+        setIsInstallingPWA(true);
+        
+        // Obtener el link de la aplicación del post
+        const appLink = post.link || post.productionUrl;
+        
+        if (!appLink) {
+            showAlert(t('no_app_link_available'), 'warning');
+            setIsInstallingPWA(false);
+            return;
+        }
+
+        // Verificar si estamos en la misma aplicación (evitar auto-instalación)
+        try {
+            const currentOrigin = window.location.origin;
+            const targetOrigin = new URL(appLink).origin;
+            
+            if (currentOrigin === targetOrigin) {
+                showAlert(t('cannot_install_current_app'), 'info');
+                setIsInstallingPWA(false);
+                return;
+            }
+        } catch (error) {
+            console.error('Error parsing URL:', error);
+        }
+
+        try {
+            // Abrir la aplicación en una nueva pestaña para trigger de instalación PWA
+            const newWindow = window.open(appLink, '_blank', 'noopener,noreferrer');
+            
+            if (newWindow) {
+                showAlert(t('opening_app_for_installation'), 'success');
+                
+                // Opcional: Cerrar la ventana después de un tiempo si el usuario no la cierra
+                setTimeout(() => {
+                    if (newWindow && !newWindow.closed) {
+                        newWindow.close();
+                        showAlert(t('pwa_install_guide'), 'info');
+                    }
+                }, 8000);
+            } else {
+                showAlert(t('popup_blocked'), 'warning');
+                // Fallback: abrir en la misma pestaña
+                window.open(appLink, '_blank', 'noopener,noreferrer');
+                showAlert(t('check_browser_menu'), 'info');
+            }
+            
+        } catch (error) {
+            console.error('Error al abrir la aplicación:', error);
+            showAlert(t('error_opening_app'), 'danger');
+        } finally {
+            setTimeout(() => setIsInstallingPWA(false), 2000);
+        }
+    };
+
+    // 🔷 NUEVA FUNCIÓN: EDITAR POST (solo para el dueño)
+    const handleEditPost = (e) => {
+        e?.stopPropagation();
+        
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        // Verificar si el usuario es el dueño del post
+        if (auth.user._id !== post.user?._id) {
+            showAlert(t('not_post_owner'), 'warning');
+            return;
+        }
+
+        // Navegar a la página de edición con los datos del post
+        history.push('/createpost', { 
+            isEdit: true, 
+            post: post 
+        });
+    };
+
+    // 🔷 FUNCIÓN PARA DESCARGAR APP COMO NATIVA
+    const handleDownloadApp = async (e) => {
+        e.stopPropagation();
+        
+        const isChrome = /Chrome/.test(navigator.userAgent);
+        const isEdge = /Edg/.test(navigator.userAgent);
+        
+        if (!isChrome && !isEdge) {
+            showAlert(t('browser_not_supported'), 'warning');
+        }
+
+        setShowDownloadAlert(true);
+        setDownloadProgress(0);
+
+        const progressInterval = setInterval(() => {
+            setDownloadProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(progressInterval);
+                    return 100;
+                }
+                return prev + 10;
+            });
+        }, 200);
+
+        try {
+            if (post.appDownloadUrl) {
+                window.open(post.appDownloadUrl, '_blank', 'noopener,noreferrer');
+            } else {
+                showAlert(t('no_download_url'), 'info');
+            }
+
+            setTimeout(() => {
+                setDownloadProgress(100);
+                clearInterval(progressInterval);
+                
+                setTimeout(() => {
+                    setShowDownloadAlert(false);
+                    setDownloadProgress(0);
+                }, 3000);
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error en la descarga:', error);
+            showAlert(t('download_error'), 'danger');
+            clearInterval(progressInterval);
+            setShowDownloadAlert(false);
+        }
+    };
+
+    // 🔷 AGREGAR OPCIÓN DE CHAT Y EDITAR AL MENÚ DE TRES PUNTOS
+    const handleThreeDotsMenu = (action) => {
+        switch (action) {
+            case 'contact':
+                handleChatWithOwner();
+                break;
+            case 'edit':
+                handleEditPost();
+                break;
+            case 'details':
+                handleViewDetails();
+                break;
+            case 'report':
+                history.push('/report', { 
+                    postId: post._id, 
+                    postTitle: post.title 
+                });
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Verificar si el usuario es el dueño del post
+    const isPostOwner = auth.user?._id === post.user?._id;
+
+    // 🔷 SI ESTAMOS EN LA PÁGINA DE DETALLE Y hideCard ES true, NO MOSTRAR EL CARD
+    if (isDetailPage && hideCard) {
+        return null;
+    }
+
+    return (
+        <>
+            <Card className="border-0 shadow-sm" style={{
+                background: theme ? 'rgba(30, 30, 30, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(10px)'
+            }}>
+                <Card.Body className="p-3">
+                    {/* Alert de descarga */}
+                    {showDownloadAlert && (
+                        <Alert variant="info" className="py-2 mb-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <span>{t('downloading_app')}</span>
+                                <small>{downloadProgress}%</small>
+                            </div>
+                            <div className="progress mt-1" style={{ height: '4px' }}>
+                                <div 
+                                    className="progress-bar progress-bar-striped progress-bar-animated" 
+                                    style={{ width: `${downloadProgress}%` }}
+                                />
+                            </div>
+                        </Alert>
+                    )}
+
+                    {/* Alert personalizado para mensajes */}
+                    {showCustomAlert && (
+                        <Alert variant={customAlertVariant} className="py-2 mb-3">
+                            {customAlertMessage}
+                        </Alert>
+                    )}
+
+                    {/* Header con título y acciones - MEJORADO ALINEACIÓN */}
+                    <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
+                        <Col>
+                            <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
+                                {/* Icono de aplicación web */}
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={<Tooltip>{t('web_application')}</Tooltip>}
+                                >
+                                    <i 
+                                        className="fas fa-globe text-primary"
+                                        style={{ fontSize: '1.1rem' }}
+                                    />
+                                </OverlayTrigger>
+                                
+                                <div style={{ flex: 1 }}>
+                                    <Card.Title 
+                                        className="mb-0" 
+                                        style={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: '700',
+                                            color: theme ? '#fff' : '#1a1a1a',
+                                            lineHeight: '1.3',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}
+                                    >
+                                        {post.title}
+                                    </Card.Title>
+                                    
+                                    {/* Badge del tipo de aplicación */}
+                                    {post.appType && (
+                                        <Badge 
+                                            bg="outline-primary" 
+                                            text="primary" 
+                                            className="mt-1"
+                                            style={{
+                                                border: '1px solid #007bff',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            {t(`createpost:app_${post.appType.replace(/-/g, '_')}`, post.appType)}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        </Col>
+                        
+                        <Col xs="auto">
+                            <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
+                                {/* Icono de chat con el dueño */}
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={<Tooltip>{t('chat_with_developer')}</Tooltip>}
+                                >
+                                    <i 
+                                        className="fas fa-comment-dots text-muted"
+                                        style={{ 
+                                            cursor: 'pointer', 
+                                            fontSize: '1.1rem',
+                                            transition: 'color 0.2s ease'
+                                        }}
+                                        onClick={handleChatWithOwner}
+                                        onMouseEnter={(e) => e.target.style.color = '#007bff'}
+                                        onMouseLeave={(e) => e.target.style.color = '#6c757d'}
+                                    />
+                                </OverlayTrigger>
+
+                                {/* NUEVO: Icono para instalar PWA de la aplicación del post */}
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip>
+                                            {isInstallingPWA ? t('installing_app') : t('install_this_app')}
+                                        </Tooltip>
+                                    }
+                                >
+                                    <i 
+                                        className={isInstallingPWA ? "fas fa-spinner fa-spin text-warning" : "fas fa-rocket text-muted"}
+                                        style={{ 
+                                            cursor: isInstallingPWA ? 'not-allowed' : 'pointer', 
+                                            fontSize: '1.1rem',
+                                            transition: 'color 0.2s ease'
+                                        }}
+                                        onClick={handleInstallPostPWA}
+                                        onMouseEnter={(e) => {
+                                            if (!isInstallingPWA) {
+                                                e.target.style.color = '#FF6B35';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isInstallingPWA) {
+                                                e.target.style.color = '#6c757d';
+                                            }
+                                        }}
+                                    />
+                                </OverlayTrigger>
+
+                                {/* Icono para visitar app con campo link */}
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={<Tooltip>{t('visit_live_app')}</Tooltip>}
+                                >
+                                    <i 
+                                        className="fas fa-external-link-alt text-muted"
+                                        style={{ 
+                                            cursor: 'pointer', 
+                                            fontSize: '1.1rem',
+                                            transition: 'color 0.2s ease'
+                                        }}
+                                        onClick={handleVisitApp}
+                                        onMouseEnter={(e) => e.target.style.color = '#28a745'}
+                                        onMouseLeave={(e) => e.target.style.color = '#6c757d'}
+                                    />
+                                </OverlayTrigger>
+
+                                {/* Menú de tres puntos MEJORADO - SIN COMPARTIR */}
+                                <Dropdown>
+                                    <Dropdown.Toggle 
+                                        variant={theme ? "dark" : "light"} 
+                                        size="sm"
+                                        className="border-0 shadow-none"
+                                        style={{
+                                            background: 'transparent',
+                                            padding: '4px 8px'
+                                        }}
+                                    >
+                                        <i className="fas fa-ellipsis-h text-muted" />
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu className={theme ? 'bg-dark text-light' : ''}>
+                                        {/* Opción de contacto */}
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('contact')}
+                                            className={theme ? 'text-light' : ''}
+                                        >
+                                            <i className={getIconClass("fas fa-comment")} />
+                                            {t('contact_developer')}
+                                        </Dropdown.Item>
+
+                                        {/* OPCIÓN: Editar post (solo para dueño) */}
+                                        {isPostOwner && (
+                                            <>
+                                                <Dropdown.Item 
+                                                    onClick={() => handleThreeDotsMenu('edit')}
+                                                    className={theme ? 'text-light' : ''}
+                                                >
+                                                    <i className={getIconClass("fas fa-edit")} />
+                                                    {t('edit_post')}
+                                                </Dropdown.Item>
+                                                <Dropdown.Divider />
+                                            </>
+                                        )}
+
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('details')}
+                                            className={theme ? 'text-light' : ''}
+                                        >
+                                            <i className={getIconClass("fas fa-info-circle")} />
+                                            {t('view_details')}
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('report')}
+                                            className="text-danger"
+                                        >
+                                            <i className={getIconClass("fas fa-flag")} />
+                                            {t('report')}
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
+                        </Col>
+                    </Row>
+
+                    {/* Carousel */}
+                    <div 
+                        className="card-image mb-3 rounded overflow-hidden"
+                        onClick={() => !isDetailPage && history.push(`/post/${post._id}`)}
+                        style={{ cursor: isDetailPage ? 'default' : 'pointer' }}
+                    >
+                        <Carousel images={post.images} id={post._id} />
+                    </div>
+
+                    {/* Acciones - SOLO SI NO ESTAMOS EN DETALLE */}
+                    {!isDetailPage && (
+                        <>
+                            <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
+                                <Col>
+                                    <div className={`d-flex align-items-center gap-3 ${getFlexClass()}`}>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <LikeButton
+                                                isLike={isLike}
+                                                handleLike={handleLike}
+                                                handleUnLike={handleUnLike}
+                                            />
+                                            <span className="text-muted small fw-semibold">
+                                                {post.likes.length}
+                                            </span>
+                                        </div>
+                                        
+                                        <div 
+                                            className="d-flex align-items-center gap-2"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={handleCommentClick}
+                                        >
+                                            <OverlayTrigger
+                                                placement="top"
+                                                overlay={<Tooltip>{t('comment')}</Tooltip>}
+                                            >
+                                                <i className="far fa-comment text-muted" />
+                                            </OverlayTrigger>
+                                            <span className="text-muted small fw-semibold">
+                                                {post.comments?.length || 0}
+                                            </span>
+                                        </div>
+
+                                        {/* COMPARTIR SE MANTIENE AQUÍ ABAJO */}
+                                        <OverlayTrigger
+                                            placement="top"
+                                            overlay={<Tooltip>{t('share')}</Tooltip>}
+                                        >
+                                            <i 
+                                                className="fas fa-share-alt text-muted"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => setIsShare(!isShare)}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+                                </Col>
+                                
+                                <Col xs="auto">
+                                    <div className="d-flex align-items-center gap-2">
+                                        <OverlayTrigger
+                                            placement="top"
+                                            overlay={<Tooltip>{saved ? t('unsave_post') : t('save_post')}</Tooltip>}
+                                        >
+                                            <i 
+                                                className={saved ? "fas fa-bookmark text-warning" : "far fa-bookmark text-muted"}
+                                                style={{ cursor: 'pointer', fontSize: '1.1rem' }}
+                                                onClick={saved ? handleUnSavePost : handleSavePost}
+                                            />
+                                        </OverlayTrigger>
+                                        <span className="text-muted small fw-semibold">
+                                            {post.saves || 0}
+                                        </span>
+                                    </div>
+                                </Col>
+                            </Row>
+
+                            {/* Botón Ver Detalles - SOLO SI NO ESTAMOS EN DETALLE */}
+                            <Button
+                                variant="outline-primary"
+                                className="w-100 py-2"
+                                onClick={handleViewDetails}
+                                style={{
+                                    fontWeight: '600',
+                                    borderRadius: '8px',
+                                    borderWidth: '2px',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                <i className={getIconClass("fas fa-external-link-alt")} />
+                                {t('view_full_details')}
+                            </Button>
+                        </>
+                    )}
+                </Card.Body>
+
+                {/* Modales */}
+                <CommentsModal
+                    show={showCommentsModal}
+                    onHide={() => setShowCommentsModal(false)}
+                    post={post}
+                    onClick={handleCommentClick}
+                />
+
+                {isShare && (
+                    <ShareModal 
+                        url={`${BASE_URL}/post/${post._id}`} 
+                        onClose={() => setIsShare(false)}
+                    />
+                )}
+            </Card>
+
+            <AuthModalAddLikesCommentsSave
+                showModal={showAuthModal}
+                closeModal={closeModal}
+                redirectToLogin={redirectToLogin}
+                redirectToRegister={redirectToRegister}
+            />
+        </>
+    );
 };
 
-export default React.memo(CardBodyCarousel);
+export default CardBodyCarousel;

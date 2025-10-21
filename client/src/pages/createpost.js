@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Form, 
+  Button, 
+  Alert,
+  Badge,
+  InputGroup
+} from 'react-bootstrap'
 import { GLOBALTYPES } from '../redux/actions/globalTypes'
 import { createPost, updatePost } from '../redux/actions/postAction'
 import { imageShow } from '../utils/mediaShow'
@@ -13,7 +24,7 @@ const CreatePost = () => {
     const location = useLocation()
     const { t } = useTranslation('createpost')
 
-    // Estados iniciales con los nuevos campos
+    // Estados iniciales con el nuevo campo link
     const [content, setContent] = useState('')
     const [images, setImages] = useState([])
     const [title, setTitle] = useState('')
@@ -21,6 +32,7 @@ const CreatePost = () => {
     const [priceType, setPriceType] = useState('')
     const [offerType, setOfferType] = useState('')
     const [features, setFeatures] = useState([])
+    const [link, setLink] = useState('') // Nuevo campo
     
     // Opciones para tipos de aplicaciones/proyectos
     const apptitleOptions = [
@@ -146,7 +158,7 @@ const CreatePost = () => {
             setPriceType(postToEdit.priceType || '')
             setOfferType(postToEdit.offerType || '')
             setFeatures(postToEdit.features || [])
-            
+            setLink(postToEdit.link || '') // Cargar link si existe
         }
     }, [isEdit, postToEdit])
 
@@ -210,7 +222,8 @@ const CreatePost = () => {
             priceType,
             offerType,
             features,
-              auth
+            link, // Incluir el link en los datos
+            auth
         }
 
         if (isEdit && postToEdit) {
@@ -233,6 +246,7 @@ const CreatePost = () => {
         setPriceType('')
         setOfferType('')
         setFeatures([])
+        setLink('') // Resetear link
     
         dispatch({ type: GLOBALTYPES.STATUS, payload: false })
         history.push('/')
@@ -243,595 +257,362 @@ const CreatePost = () => {
         history.goBack()
     }
 
+    // Función para validar URL
+    const isValidUrl = (string) => {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
     return (
-        <div style={{
+        <Container fluid className="py-3" style={{
             minHeight: '100vh',
-            background: theme ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            padding: '0.5rem 0.2rem'
+            background: theme ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
         }}>
-            <div style={{
-                maxWidth: '680px',
-                margin: '0 auto'
-            }}>
-                {/* Header Card */}
-                <div style={{
-                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '20px',
-                    padding: '0.5rem',
-                    marginBottom: '1.5rem',
-                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
-                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                                color: 'white'
-                            }}>
-                                {auth.user.username?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                                <h3 style={{
-                                    margin: 0,
-                                    fontSize: '1.5rem',
-                                    color: theme ? '#fff' : '#1a1a2e',
-                                    fontWeight: '700'
-                                }}>
-                                    {isEdit ? t('edit_post') : t('create_post')}
-                                </h3>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.875rem',
-                                    color: theme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'
-                                }}>
-                                    {t('share_your_moment')}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleCancel}
-                            style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                border: 'none',
-                                background: theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                                color: theme ? '#fff' : '#1a1a2e',
-                                fontSize: '1.5rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.3s ease'
-                            }}
-                            onMouseEnter={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}
-                            onMouseLeave={e => e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}
-                        >
-                            ×
-                        </button>
-                    </div>
-                </div>
-
-                {/* Main Content Card */}
-                <div style={{
-                    background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '20px',
-                    padding: '0.5rem',
-                    border: theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
-                    boxShadow: theme ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)'
-                }}>
-                    <form onSubmit={handleSubmit}>
-                        
-                        {/* Sección: Información del Proyecto */}
-                        <div style={{
-                            marginBottom: '2rem',
-                            padding: '0.5rem',
-                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                            borderRadius: '16px',
-                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
-                        }}>
-                            <h4 style={{
-                                margin: '0 0 1.5rem 0',
-                                color: theme ? '#fff' : '#1a1a2e',
-                                fontSize: '1.25rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <i className="fas fa-info-circle" style={{ color: '#667eea' }}></i>
-                                
-                            </h4>
-
-                            {/* Campo Tipo de Aplicación */}
-                            <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{
-                                    display: 'block',
-                                    marginBottom: '0.75rem',
-                                    color: theme ? '#fff' : '#1a1a2e',
-                                    fontWeight: '600',
-                                    fontSize: '1rem'
-                                }}>
-                                    <i className="fas fa-heading" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
-                                    {t('custom_title_label')}
-                                </label>
-                                <select
-                                    value={title}
-                                    onChange={e => setTitle(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '1.25rem',
-                                        border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
-                                        borderRadius: '16px',
-                                        fontSize: '1rem',
-                                        background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
-                                        color: theme ? '#fff' : '#1a1a2e',
-                                        transition: 'all 0.3s ease',
-                                        fontFamily: 'inherit'
-                                    }}
-                                    onFocus={e => e.target.style.borderColor = '#667eea'}
-                                    onBlur={e => e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+            <Row className="justify-content-center">
+                <Col xs={12} lg={8} xl={6}>
+                    {/* Header Card */}
+                    <Card className={`mb-4 ${theme ? 'bg-dark text-white' : 'bg-light'}`} 
+                          style={{ 
+                              border: 'none', 
+                              borderRadius: '20px',
+                              backdropFilter: 'blur(10px)',
+                              background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)'
+                          }}>
+                        <Card.Body className="p-4">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="rounded-circle d-flex align-items-center justify-content-center"
+                                         style={{
+                                             width: '50px',
+                                             height: '50px',
+                                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                             fontSize: '1.5rem',
+                                             fontWeight: 'bold',
+                                             color: 'white'
+                                         }}>
+                                        {auth.user.username?.[0]?.toUpperCase() || 'U'}
+                                    </div>
+                                    <div>
+                                        <h4 className="mb-1 fw-bold">
+                                            {isEdit ? t('edit_post') : t('create_post')}
+                                        </h4>
+                                        <p className="mb-0 text-muted">
+                                            {t('share_your_moment')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant={theme ? "outline-light" : "outline-dark"}
+                                    className="rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                    style={{ width: '40px', height: '40px' }}
+                                    onClick={handleCancel}
                                 >
-                                    {apptitleOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                             
+                                    ×
+                                </Button>
                             </div>
+                        </Card.Body>
+                    </Card>
 
-                       
+                    {/* Main Content Card */}
+                    <Card className={`${theme ? 'bg-dark text-white' : 'bg-light'}`}
+                          style={{ 
+                              border: 'none', 
+                              borderRadius: '20px',
+                              backdropFilter: 'blur(10px)',
+                              background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)'
+                          }}>
+                        <Card.Body className="p-4">
+                            <Form onSubmit={handleSubmit}>
+                                
+                                {/* Sección: Información del Proyecto */}
+                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
+                                      style={{ border: 'none', borderRadius: '16px' }}>
+                                    <Card.Body className="p-4">
+                                        <h5 className="mb-3 d-flex align-items-center gap-2">
+                                            <i className="fas fa-info-circle text-primary"></i>
+                                            {t('project_info_section')}
+                                        </h5>
 
-                          
-                            <div>
-                                <label style={{
-                                    display: 'block',
-                                    marginBottom: '0.75rem',
-                                    color: theme ? '#fff' : '#1a1a2e',
-                                    fontWeight: '600',
-                                    fontSize: '1rem'
-                                }}>
-                                    <i className="fas fa-align-left" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
-                                    {t('description_label')}
-                                </label>
-                                <textarea
-                                    placeholder={t('post_content_placeholder', { username: auth.user.username })}
-                                    value={content}
-                                    onChange={e => setContent(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        minHeight: '120px',
-                                        padding: '1.25rem',
-                                        border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
-                                        borderRadius: '16px',
-                                        fontSize: '1rem',
-                                        resize: 'vertical',
-                                        background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
-                                        color: theme ? '#fff' : '#1a1a2e',
-                                        transition: 'all 0.3s ease',
-                                        fontFamily: 'inherit'
-                                    }}
-                                    onFocus={e => e.target.style.borderColor = '#667eea'}
-                                    onBlur={e => e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
-                                />
-                            </div>
-                        </div>
+                                        {/* Campo Tipo de Aplicación */}
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">
+                                                <i className="fas fa-heading me-2 text-primary"></i>
+                                                {t('custom_title_label')}
+                                            </Form.Label>
+                                            <Form.Select
+                                                value={title}
+                                                onChange={e => setTitle(e.target.value)}
+                                                className={theme ? 'bg-dark text-white' : ''}
+                                                size="lg"
+                                            >
+                                                {apptitleOptions.map(option => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
 
-                        {/* Sección: Información de Precios */}
-                        <div style={{
-                            marginBottom: '2rem',
-                            padding: '1.5rem',
-                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                            borderRadius: '16px',
-                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
-                        }}>
-                            <h4 style={{
-                                margin: '0 0 1.5rem 0',
-                                color: theme ? '#fff' : '#1a1a2e',
-                                fontSize: '1.25rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <i className="fas fa-tag" style={{ color: '#667eea' }}></i>
-                                {t('pricing_section')}
-                            </h4>
+                                        {/* Campo Link */}
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">
+                                                <i className="fas fa-link me-2 text-primary"></i>
+                                                {t('link_label') || 'Enlace de la aplicación'}
+                                            </Form.Label>
+                                            <InputGroup>
+                                                <InputGroup.Text>
+                                                    <i className="fas fa-globe"></i>
+                                                </InputGroup.Text>
+                                                <Form.Control
+                                                    type="url"
+                                                    placeholder="https://tu-aplicacion.com"
+                                                    value={link}
+                                                    onChange={e => setLink(e.target.value)}
+                                                    className={theme ? 'bg-dark text-white' : ''}
+                                                    isValid={link && isValidUrl(link)}
+                                                    isInvalid={link && !isValidUrl(link)}
+                                                />
+                                                <Form.Control.Feedback type="invalid">
+                                                    {t('invalid_url') || 'Por favor ingresa una URL válida'}
+                                                </Form.Control.Feedback>
+                                            </InputGroup>
+                                            <Form.Text className="text-muted">
+                                                {t('link_help_text') || 'Ingresa el enlace donde se puede ver o probar tu aplicación'}
+                                            </Form.Text>
+                                        </Form.Group>
 
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr 1fr',
-                                gap: '1rem'
-                            }}>
-                                {/* Precio */}
-                                <div>
-                                    <label style={{
-                                        display: 'block',
-                                        marginBottom: '0.75rem',
-                                        color: theme ? '#fff' : '#1a1a2e',
-                                        fontWeight: '600',
-                                        fontSize: '1rem'
-                                    }}>
-                                        <i className="fas fa-dollar-sign" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
-                                        {t('price_label')}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={price}
-                                        onChange={e => setPrice(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '1rem',
-                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
-                                            borderRadius: '12px',
-                                            fontSize: '1rem',
-                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
-                                            color: theme ? '#fff' : '#1a1a2e',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    />
-                                </div>
+                                        {/* Campo Descripción */}
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold">
+                                                <i className="fas fa-align-left me-2 text-primary"></i>
+                                                {t('description_label')}
+                                            </Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={4}
+                                                placeholder={t('post_content_placeholder', { username: auth.user.username })}
+                                                value={content}
+                                                onChange={e => setContent(e.target.value)}
+                                                className={theme ? 'bg-dark text-white' : ''}
+                                            />
+                                        </Form.Group>
+                                    </Card.Body>
+                                </Card>
 
-                                {/* Moneda */}
-                                <div>
-                                    <label style={{
-                                        display: 'block',
-                                        marginBottom: '0.75rem',
-                                        color: theme ? '#fff' : '#1a1a2e',
-                                        fontWeight: '600',
-                                        fontSize: '1rem'
-                                    }}>
-                                        <i className="fas fa-coins" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
-                                        {t('currency_label')}
-                                    </label>
-                                    <select
-                                        value={priceType}
-                                        onChange={e => setPriceType(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '1rem',
-                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
-                                            borderRadius: '12px',
-                                            fontSize: '1rem',
-                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
-                                            color: theme ? '#fff' : '#1a1a2e',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    >
-                                        {priceTypeOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {/* Sección: Información de Precios */}
+                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
+                                      style={{ border: 'none', borderRadius: '16px' }}>
+                                    <Card.Body className="p-4">
+                                        <h5 className="mb-3 d-flex align-items-center gap-2">
+                                            <i className="fas fa-tag text-primary"></i>
+                                            {t('pricing_section')}
+                                        </h5>
 
-                                {/* Tipo de Oferta */}
-                                <div>
-                                    <label style={{
-                                        display: 'block',
-                                        marginBottom: '0.75rem',
-                                        color: theme ? '#fff' : '#1a1a2e',
-                                        fontWeight: '600',
-                                        fontSize: '1rem'
-                                    }}>
-                                        <i className="fas fa-handshake" style={{ marginRight: '0.5rem', color: '#667eea' }}></i>
-                                        {t('offer_type_label')}
-                                    </label>
-                                    <select
-                                        value={offerType}
-                                        onChange={e => setOfferType(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '1rem',
-                                            border: theme ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(0, 0, 0, 0.08)',
-                                            borderRadius: '12px',
-                                            fontSize: '1rem',
-                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
-                                            color: theme ? '#fff' : '#1a1a2e',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    >
-                                        {offerTypeOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                                        <Row>
+                                            {/* Precio */}
+                                            <Col md={4}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="fw-semibold">
+                                                        <i className="fas fa-dollar-sign me-2 text-primary"></i>
+                                                        {t('price_label')}
+                                                    </Form.Label>
+                                                    <Form.Control
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={price}
+                                                        onChange={e => setPrice(e.target.value)}
+                                                        className={theme ? 'bg-dark text-white' : ''}
+                                                    />
+                                                </Form.Group>
+                                            </Col>
 
-                        {/* Sección: Características */}
-                        <div style={{
-                            marginBottom: '2rem',
-                            padding: '0.5rem',
-                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                            borderRadius: '16px',
-                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
-                        }}>
-                            <h4 style={{
-                                margin: '0 0 1.5rem 0',
-                                color: theme ? '#fff' : '#1a1a2e',
-                                fontSize: '1.25rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem'
-                            }}>
-                                <i className="fas fa-cogs" style={{ color: '#667eea' }}></i>
-                                {t('features_section')}
-                            </h4>
+                                            {/* Moneda */}
+                                            <Col md={4}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="fw-semibold">
+                                                        <i className="fas fa-coins me-2 text-primary"></i>
+                                                        {t('currency_label')}
+                                                    </Form.Label>
+                                                    <Form.Select
+                                                        value={priceType}
+                                                        onChange={e => setPriceType(e.target.value)}
+                                                        className={theme ? 'bg-dark text-white' : ''}
+                                                    >
+                                                        {priceTypeOptions.map(option => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
 
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                                gap: '0.75rem',
-                                maxHeight: '400px',
-                                overflowY: 'auto',
-                                padding: '0.5rem'
-                            }}>
-                                {featuresOptions.map(option => (
-                                    <label
-                                        key={option.value}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.75rem',
-                                            padding: '1rem',
-                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.6)',
-                                            borderRadius: '12px',
-                                            border: features.includes(option.value)
-                                                ? '2px solid #667eea'
-                                                : theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (!features.includes(option.value)) {
-                                                e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)'
-                                                e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (!features.includes(option.value)) {
-                                                e.target.style.background = theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.6)'
-                                                e.target.style.borderColor = theme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)'
-                                            }
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            value={option.value}
-                                            checked={features.includes(option.value)}
-                                            onChange={handleFeatureChange}
-                                            style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                accentColor: '#667eea',
-                                                cursor: 'pointer'
-                                            }}
-                                        />
-                                        <span style={{
-                                            color: theme ? '#fff' : '#1a1a2e',
-                                            fontSize: '0.95rem',
-                                            fontWeight: features.includes(option.value) ? '600' : '400',
-                                            flex: 1
+                                            {/* Tipo de Oferta */}
+                                            <Col md={4}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="fw-semibold">
+                                                        <i className="fas fa-handshake me-2 text-primary"></i>
+                                                        {t('offer_type_label')}
+                                                    </Form.Label>
+                                                    <Form.Select
+                                                        value={offerType}
+                                                        onChange={e => setOfferType(e.target.value)}
+                                                        className={theme ? 'bg-dark text-white' : ''}
+                                                    >
+                                                        {offerTypeOptions.map(option => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                    </Card.Body>
+                                </Card>
+
+                                {/* Sección: Características */}
+                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
+                                      style={{ border: 'none', borderRadius: '16px' }}>
+                                    <Card.Body className="p-4">
+                                        <h5 className="mb-3 d-flex align-items-center gap-2">
+                                            <i className="fas fa-cogs text-primary"></i>
+                                            {t('features_section')}
+                                        </h5>
+
+                                        <div style={{ 
+                                            maxHeight: '400px', 
+                                            overflowY: 'auto',
+                                            padding: '0.5rem'
                                         }}>
-                                            {option.label}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                            <div style={{
-                                marginTop: '1rem',
-                                fontSize: '0.875rem',
-                                color: theme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                                fontStyle: 'italic',
-                                textAlign: 'center'
-                            }}>
-                                {t('features_selected_count', { count: features.length })}
-                            </div>
-                        </div>
+                                            <Row>
+                                                {featuresOptions.map(option => (
+                                                    <Col xs={12} md={6} key={option.value} className="mb-2">
+                                                        <Form.Check
+                                                            type="checkbox"
+                                                            id={`feature-${option.value}`}
+                                                            label={option.label}
+                                                            value={option.value}
+                                                            checked={features.includes(option.value)}
+                                                            onChange={handleFeatureChange}
+                                                            className={theme ? 'text-white' : ''}
+                                                        />
+                                                    </Col>
+                                                ))}
+                                            </Row>
+                                        </div>
+                                        
+                                        <div className="text-center mt-3">
+                                            <Badge bg="primary" className="p-2">
+                                                {t('features_selected_count', { count: features.length })}
+                                            </Badge>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
 
-                        {/* Sección: Multimedia */}
-                        <div style={{
-                            marginBottom: '2rem',
-                            padding: '1.5rem',
-                            background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                            borderRadius: '16px',
-                            border: theme ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.03)'
-                        }}>
-                            <h4 style={{
-                                margin: '0 0 1.5rem 0',
-                                color: theme ? '#fff' : '#1a1a2e',
-                                fontSize: '1.25rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <i className="fas fa-images" style={{ color: '#667eea' }}></i>
-                                {t('media_section')}
-                            </h4>
+                                {/* Sección: Multimedia */}
+                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
+                                      style={{ border: 'none', borderRadius: '16px' }}>
+                                    <Card.Body className="p-4">
+                                        <h5 className="mb-3 d-flex align-items-center gap-2">
+                                            <i className="fas fa-images text-primary"></i>
+                                            {t('media_section')}
+                                        </h5>
 
-                            {/* Image Preview Grid */}
-                            {images.length > 0 && (
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-                                    gap: '1rem',
-                                    marginBottom: '1.5rem'
-                                }}>
-                                    {images.map((img, index) => (
-                                        <div key={index} style={{
-                                            position: 'relative',
-                                            borderRadius: '16px',
-                                            overflow: 'hidden',
-                                            aspectRatio: '1',
-                                            background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
-                                        }}>
-                                            <div style={{ width: '100%', height: '100%' }}>
-                                                {img.url ?
-                                                    imageShow(img.url, theme)
-                                                    :
-                                                    imageShow(URL.createObjectURL(img), theme)
-                                                }
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => deleteImages(index)}
+                                        {/* Image Preview Grid */}
+                                        {images.length > 0 && (
+                                            <Row className="mb-3 g-2">
+                                                {images.map((img, index) => (
+                                                    <Col xs={6} sm={4} md={3} key={index}>
+                                                        <div className="position-relative rounded" 
+                                                             style={{ aspectRatio: '1/1' }}>
+                                                            <div className="w-100 h-100 rounded">
+                                                                {img.url ?
+                                                                    imageShow(img.url, theme)
+                                                                    :
+                                                                    imageShow(URL.createObjectURL(img), theme)
+                                                                }
+                                                            </div>
+                                                            <Button
+                                                                variant="danger"
+                                                                size="sm"
+                                                                className="position-absolute top-0 end-0 m-1 rounded-circle"
+                                                                style={{ width: '30px', height: '30px' }}
+                                                                onClick={() => deleteImages(index)}
+                                                            >
+                                                                ×
+                                                            </Button>
+                                                        </div>
+                                                    </Col>
+                                                ))}
+                                            </Row>
+                                        )}
+
+                                        {/* Upload Button */}
+                                        <Form.Group>
+                                            <Form.Label 
+                                                htmlFor="fileInput"
+                                                className="d-flex flex-column align-items-center justify-content-center border-dashed rounded p-4 cursor-pointer"
                                                 style={{
-                                                    position: 'absolute',
-                                                    top: '8px',
-                                                    right: '8px',
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    borderRadius: '50%',
-                                                    border: 'none',
-                                                    background: 'rgba(239, 68, 68, 0.95)',
-                                                    color: 'white',
-                                                    fontSize: '1.25rem',
+                                                    border: theme ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed #dee2e6',
                                                     cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    transition: 'all 0.3s ease',
-                                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-                                                }}
-                                                onMouseEnter={e => {
-                                                    e.target.style.transform = 'scale(1.1)'
-                                                    e.target.style.background = 'rgba(220, 38, 38, 0.95)'
-                                                }}
-                                                onMouseLeave={e => {
-                                                    e.target.style.transform = 'scale(1)'
-                                                    e.target.style.background = 'rgba(239, 68, 68, 0.95)'
+                                                    transition: 'all 0.3s ease'
                                                 }}
                                             >
-                                                ×
-                                            </button>
+                                                <i className="fas fa-image text-primary mb-2" style={{ fontSize: '2rem' }}></i>
+                                                <span className={theme ? 'text-white' : 'text-muted'}>
+                                                    {images.length > 0 ? t('add_more_photos') : t('add_photos_to_post')}
+                                                </span>
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="file"
+                                                id="fileInput"
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleChangeImages}
+                                                className="d-none"
+                                            />
+                                        </Form.Group>
+                                    </Card.Body>
+                                </Card>
+
+                                {/* Action Buttons */}
+                                <Row className="mt-4">
+                                    <Col>
+                                        <div className="d-flex gap-3">
+                                            <Button
+                                                variant={theme ? "outline-light" : "outline-secondary"}
+                                                size="lg"
+                                                className="flex-fill"
+                                                onClick={handleCancel}
+                                            >
+                                                {t('cancel_button')}
+                                            </Button>
+                                            <Button
+                                                variant="primary"
+                                                size="lg"
+                                                className="flex-fill"
+                                                type="submit"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                    border: 'none'
+                                                }}
+                                            >
+                                                {isEdit ? t('update_post_button') : t('create_post_button')}
+                                            </Button>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Upload Button */}
-                            <div style={{
-                                position: 'relative'
-                            }}>
-                                <input
-                                    type="file"
-                                    id="fileInput"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleChangeImages}
-                                    style={{ display: 'none' }}
-                                />
-                                <label
-                                    htmlFor="fileInput"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.75rem',
-                                        padding: '1.5rem',
-                                        border: theme ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed rgba(0, 0, 0, 0.15)',
-                                        borderRadius: '16px',
-                                        background: theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s ease',
-                                        color: theme ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.target.style.borderColor = '#667eea'
-                                        e.target.style.background = theme ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.05)'
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.target.style.borderColor = theme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
-                                        e.target.style.background = theme ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'
-                                    }}
-                                >
-                                    <i className="fas fa-image" style={{ fontSize: '1.5rem', color: '#667eea' }}></i>
-                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>
-                                        {images.length > 0 ? t('add_more_photos') : t('add_photos_to_post')}
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div style={{
-                            display: 'flex',
-                            gap: '1rem',
-                            marginTop: '2rem'
-                        }}>
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                style={{
-                                    flex: '1',
-                                    padding: '1.25rem',
-                                    border: theme ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid rgba(0, 0, 0, 0.1)',
-                                    borderRadius: '12px',
-                                    background: 'transparent',
-                                    color: theme ? '#fff' : '#1a1a2e',
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onMouseEnter={e => {
-                                    e.target.style.background = theme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
-                                }}
-                                onMouseLeave={e => {
-                                    e.target.style.background = 'transparent'
-                                }}
-                            >
-                                {t('cancel_button')}
-                            </button>
-                            <button
-                                type="submit"
-                                style={{
-                                    flex: '2',
-                                    padding: '1.25rem',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    color: 'white',
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
-                                }}
-                                onMouseEnter={e => {
-                                    e.target.style.transform = 'translateY(-2px)'
-                                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)'
-                                }}
-                                onMouseLeave={e => {
-                                    e.target.style.transform = 'translateY(0)'
-                                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
-                                }}
-                            >
-                                {isEdit ? t('update_post_button') : t('create_post_button')}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                                    </Col>
+                                </Row>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     )
 }
 

@@ -13,13 +13,7 @@ export const POST_TYPES = {
 }
 
 
-export const createPost = ({  content, 
-    images, 
-    title,
-    price,
-    unidaddeprecio,
-    oferta,
-    features,
+export const createPost = ({ content,title,link,price,priceType,offerType,features,images,
     auth, socket}) => async (dispatch) => {
     let media = []
     try {
@@ -27,10 +21,7 @@ export const createPost = ({  content,
         if(images.length > 0) media = await imageUpload(images)
 
         const res = await postDataAPI('posts', { title,
-            price,
-            unidaddeprecio,
-            oferta,
-            features, content, images: media }, auth.token)
+            content,title,link,price,priceType,offerType,features, images: media }, auth.token)
 
         dispatch({ 
             type: POST_TYPES.CREATE_POST, 
@@ -78,49 +69,68 @@ export const getPosts = (token) => async (dispatch) => {
     }
 }
 
-export const updatePost = ({  content, 
+export const updatePost = ({
+    content, 
+    title, 
+link,
+    price, 
+    priceType, 
+    offerType, 
+    features, 
     images, 
-    title,
-    price,
-    unidaddeprecio,
-    oferta,
-    features,
-    auth,   status}) => async (dispatch) => {
+    auth, 
+    status
+  }) => async (dispatch) => {
     let media = []
     const imgNewUrl = images.filter(img => !img.url)
     const imgOldUrl = images.filter(img => img.url)
-
-    if(status.content === content 
-        && imgNewUrl.length === 0
-        && imgOldUrl.length === status.images.length
-    ) return;
-
-    try {
-        dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
-        if(imgNewUrl.length > 0) media = await imageUpload(imgNewUrl)
-
-        const res = await patchDataAPI(`post/${status._id}`, { 
-            content, 
-          
-            title,
-            price,
-            unidaddeprecio,
-            oferta,
-            features,
-             images: [...imgOldUrl, ...media] 
-        }, auth.token)
-
-        dispatch({ type: POST_TYPES.UPDATE_POST, payload: res.data.newPost })
-
-        dispatch({ type: GLOBALTYPES.ALERT, payload: {success: res.data.msg} })
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {error: err.response.data.msg}
-        })
+  
+    // ✅ COMPARACIÓN MEJORADA - Verificar todos los campos
+    const hasChanges = 
+      status.content !== content ||
+      status.title !== title ||
+      status.link !== link ||
+      status.price !== price ||
+      status.priceType !== priceType ||
+      status.offerType !== offerType ||
+      JSON.stringify(status.features) !== JSON.stringify(features) ||
+      imgNewUrl.length > 0 ||
+      imgOldUrl.length !== status.images.length;
+  
+    if (!hasChanges) {
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { info: 'No changes to update' } 
+      });
+      return;
     }
-}
-
+  
+    try {
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+      
+      if (imgNewUrl.length > 0) media = await imageUpload(imgNewUrl);
+  
+      const res = await patchDataAPI(`post/${status._id}`, { 
+        content, 
+        title, 
+        link,
+        price, 
+        priceType, 
+        offerType, 
+        features, 
+        images: [...imgOldUrl, ...media] 
+      }, auth.token);
+  
+      dispatch({ type: POST_TYPES.UPDATE_POST, payload: res.data.newPost });
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
+      
+    } catch (err) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { error: err.response?.data?.msg || 'Update failed' }
+      });
+    }
+  }
 export const likePost = ({post, auth, socket}) => async (dispatch) => {
     const newPost = {...post, likes: [...post.likes, auth.user]}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost})
