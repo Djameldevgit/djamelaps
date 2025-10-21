@@ -259,12 +259,7 @@ const profileinfouser = () => {
                     title={t('appInfo', 'Información')}
                     to="/appinfo2"
                   />
-                  <MenuOption
-                    icon={FaTools}
-                    iconColor="#6c757d"
-                    title={t('roles', 'Roles')}
-                    to="/users/roles"
-                  />
+                 
 
 
 
