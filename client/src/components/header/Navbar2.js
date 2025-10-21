@@ -10,28 +10,99 @@ import {
   FaUserCircle,
   FaSignInAlt,
   FaUserPlus,
- 
   FaBell,
- 
   FaInfoCircle,
   FaFacebookMessenger,
+  FaDownload, // ✅ NUEVO ICONO
+  FaRocket    // ✅ NUEVO ICONO ALTERNATIVO
 } from 'react-icons/fa';
-import { Navbar, Container, NavDropdown, Badge } from 'react-bootstrap';
- 
+import { Navbar, Container, NavDropdown, Badge, Alert } from 'react-bootstrap';
 import LanguageSelectorpc from '../LanguageSelectorpc';
 
 const Navbar2 = () => {
   const { auth, cart, notify, settings } = useSelector((state) => state);
- 
   const history = useHistory();
   const { languageReducer } = useSelector(state => state);
   const { t, i18n } = useTranslation('navbar2');
   const lang = languageReducer.language || 'es';
   
- 
   const [userRole, setUserRole] = useState(auth.user?.role);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
+  
+  // ✅ NUEVO: Estados para instalación PWA
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [showInstallAlert, setShowInstallAlert] = useState(false);
+  const [installAlertMessage, setInstallAlertMessage] = useState('');
+// Agrega esto temporalmente en tu Navbar2 para debug
+const PWADebugInfo = () => {
+  const [pwaStatus, setPwaStatus] = useState({});
+  
+  useEffect(() => {
+    const checkPWAStatus = async () => {
+      const status = {
+        serviceWorker: 'serviceWorker' in navigator,
+        manifest: !!document.querySelector('link[rel="manifest"]'),
+        https: window.location.protocol === 'https:',
+        localhost: window.location.hostname === 'localhost',
+        displayMode: window.matchMedia('(display-mode: standalone)').matches
+      };
+      
+      // Verificar service worker
+      if (status.serviceWorker) {
+        const registration = await navigator.serviceWorker.ready;
+        status.swRegistered = !!registration;
+      }
+      
+      // Verificar manifest
+      try {
+        const response = await fetch('/manifest.json');
+        const manifest = await response.json();
+        status.manifestValid = true;
+        status.manifestName = manifest.name;
+      } catch (error) {
+        status.manifestValid = false;
+      }
+      
+      setPwaStatus(status);
+    };
+    
+    checkPWAStatus();
+  }, []);
+  
+  if (process.env.NODE_ENV === 'development') {
+    return (
+      <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        left: '10px',
+        background: 'rgba(0,0,0,0.9)',
+        color: 'white',
+        padding: '15px',
+        borderRadius: '10px',
+        fontSize: '12px',
+        zIndex: 9999,
+        maxWidth: '300px'
+      }}>
+        <h6>🔧 PWA Debug Info</h6>
+        <div>Service Worker: {pwaStatus.serviceWorker ? '✅' : '❌'}</div>
+        <div>SW Registrado: {pwaStatus.swRegistered ? '✅' : '❌'}</div>
+        <div>Manifest: {pwaStatus.manifest ? '✅' : '❌'}</div>
+        <div>Manifest Válido: {pwaStatus.manifestValid ? '✅' : '❌'}</div>
+        <div>HTTPS: {pwaStatus.https ? '✅' : '❌'}</div>
+        <div>Localhost: {pwaStatus.localhost ? '✅' : '❌'}</div>
+        <div>Instalado: {pwaStatus.displayMode ? '✅' : '❌'}</div>
+        {pwaStatus.manifestName && <div>App: {pwaStatus.manifestName}</div>}
+      </div>
+    );
+  }
+  
+  return null;
+};
 
+// Luego en tu Navbar2, agrégalo:
+// <PWADebugInfo />
   useEffect(() => {
     if (lang && lang !== i18n.language) {
       i18n.changeLanguage(lang);
@@ -50,6 +121,97 @@ const Navbar2 = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ✅ NUEVO: Effect para capturar el evento de instalación PWA
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+      console.log('PWA: beforeinstallprompt event captured');
+    };
+
+    const handleAppInstalled = () => {
+      console.log('PWA: App installed successfully');
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      showInstallMessage(t('pwa_install_success') || '¡App instalada correctamente!', 'success');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [t]);
+
+  // ✅ NUEVO: Función para mostrar mensajes de instalación
+  const showInstallMessage = (message, variant = 'info') => {
+    setInstallAlertMessage(message);
+    setShowInstallAlert(true);
+    setTimeout(() => {
+      setShowInstallAlert(false);
+    }, 4000);
+  };
+
+  // ✅ NUEVO: Función principal para instalar PWA
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      showInstallMessage(
+        t('pwa_not_supported') || 'Tu navegador no soporta instalación de apps', 
+        'warning'
+      );
+      return;
+    }
+
+    if (isInstalling) return;
+
+    setIsInstalling(true);
+
+    try {
+      // Mostrar el prompt nativo de instalación
+      deferredPrompt.prompt();
+      
+      // Esperar la decisión del usuario
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('PWA: User accepted the install prompt');
+        showInstallMessage(
+          t('pwa_install_started') || 'Instalación iniciada...', 
+          'success'
+        );
+      } else {
+        console.log('PWA: User dismissed the install prompt');
+        showInstallMessage(
+          t('pwa_install_declined') || 'Instalación cancelada', 
+          'info'
+        );
+      }
+      
+      // Limpiar el prompt
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      
+    } catch (error) {
+      console.error('PWA: Error during installation:', error);
+      showInstallMessage(
+        t('pwa_install_error') || 'Error durante la instalación', 
+        'danger'
+      );
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
+  // ✅ NUEVO: Verificar si ya está instalado
+  const isAppInstalled = () => {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone ||
+           document.referrer.includes('android-app://');
+  };
+
   if (!settings) {
     return (
       <nav className="navbar navbar-light bg-light">
@@ -63,8 +225,6 @@ const Navbar2 = () => {
   };
 
   const unreadNotifications = notify.data.filter(n => !n.isRead).length;
-  
-  // Simular mensajes no leídos
   const unreadMessages = 0;
 
   // MenuItem simplificado solo para dropdown de usuarios NO autenticados
@@ -93,6 +253,27 @@ const Navbar2 = () => {
 
   return (
     <div>
+      {/* ✅ NUEVO: Alert para mensajes de instalación */}
+      {showInstallAlert && (
+        <Alert 
+          variant={installAlertMessage.includes('éxito') || installAlertMessage.includes('correctamente') ? 'success' : 
+                  installAlertMessage.includes('Error') ? 'danger' : 'info'}
+          className="mb-0 text-center py-2"
+          style={{
+            position: 'fixed',
+            top: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: '300px',
+            borderRadius: '10px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+          }}
+        >
+          {installAlertMessage}
+        </Alert>
+      )}
+
       <Navbar
         expand="lg"
         style={{
@@ -161,7 +342,39 @@ const Navbar2 = () => {
             <div className="d-none d-lg-block">
               <LanguageSelectorpc />
             </div>
- 
+
+            {/* ✅ NUEVO: Botón Instalar App PWA */}
+            {canInstall && !isAppInstalled() && (
+              <div
+                onClick={handleInstallPWA}
+                className="d-flex align-items-center justify-content-center icon-button"
+                style={{
+                  cursor: isInstalling ? 'not-allowed' : 'pointer',
+                  width: isMobile ? '40px' : '45px',
+                  height: isMobile ? '40px' : '45px',
+                  borderRadius: '12px',
+                  background: isInstalling 
+                    ? 'linear-gradient(135deg, #ffa726 0%, #ff9800 100%)'
+                    : 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                  opacity: isInstalling ? 0.7 : 1
+                }}
+                title={isInstalling 
+                  ? (t('pwa_installing') || 'Instalando...') 
+                  : (t('install_app') || 'Instalar App')
+                }
+              >
+                {isInstalling ? (
+                  <div className="spinner-border spinner-border-sm" style={{ color: 'white' }} />
+                ) : (
+                  <FaDownload
+                    size={isMobile ? 18 : 20}
+                    style={{ color: 'white' }}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Botón Agregar Post (solo para usuarios autenticados con rol especial) */}
             {auth.user && (userRole === "Super-utilisateur" || userRole === "admin") && (
@@ -353,8 +566,8 @@ const Navbar2 = () => {
 
         .dropdown-menu {
           border: none !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
-          border-radius: 15px !important;
+          boxShadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+          borderRadius: 15px !important;
         }
       `}</style>
     </div>

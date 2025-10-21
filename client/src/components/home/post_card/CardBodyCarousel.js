@@ -41,6 +41,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
     const [customAlertMessage, setCustomAlertMessage] = useState('');
     const [customAlertVariant, setCustomAlertVariant] = useState('info');
     const [isInstallingPWA, setIsInstallingPWA] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     // Detectar si estamos en la página de detalle del post
     const isDetailPage = location.pathname === `/post/${post._id}`;
@@ -51,6 +52,26 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         return isRTL ? `${iconName} ms-2` : `${iconName} me-2`;
     };
     const getFlexClass = () => isRTL ? 'flex-row-reverse' : 'flex-row';
+
+    // 🔷 NUEVO: Verificar si el usuario puede editar el post (dueño O admin)
+    const canEditPost = auth.user && (
+        auth.user._id === post.user?._id || 
+        auth.user.role === "admin"
+    );
+
+    // 🔷 NUEVO: Escuchar el evento beforeinstallprompt para PWA
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
 
     // Likes
     useEffect(() => {
@@ -229,14 +250,14 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN: INSTALAR PWA DE LA APLICACIÓN DEL POST
+    // 🔷 NUEVA FUNCIÓN MEJORADA: INSTALAR PWA CON PROMPT NATIVO
     const handleInstallPostPWA = async (e) => {
         e?.stopPropagation();
         
         if (isInstallingPWA) return;
         
         setIsInstallingPWA(true);
-        
+
         // Obtener el link de la aplicación del post
         const appLink = post.link || post.productionUrl;
         
@@ -261,35 +282,51 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
 
         try {
-            // Abrir la aplicación en una nueva pestaña para trigger de instalación PWA
-            const newWindow = window.open(appLink, '_blank', 'noopener,noreferrer');
-            
-            if (newWindow) {
-                showAlert(t('opening_app_for_installation'), 'success');
+            // Estrategia 1: Intentar usar deferredPrompt si está disponible
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
                 
-                // Opcional: Cerrar la ventana después de un tiempo si el usuario no la cierra
-                setTimeout(() => {
-                    if (newWindow && !newWindow.closed) {
-                        newWindow.close();
-                        showAlert(t('pwa_install_guide'), 'info');
-                    }
-                }, 8000);
-            } else {
-                showAlert(t('popup_blocked'), 'warning');
-                // Fallback: abrir en la misma pestaña
-                window.open(appLink, '_blank', 'noopener,noreferrer');
-                showAlert(t('check_browser_menu'), 'info');
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    showAlert(t('pwa_install_started'), 'success');
+                } else {
+                    showAlert(t('pwa_install_declined'), 'info');
+                }
+                
+                setDeferredPrompt(null);
+            } 
+            // Estrategia 2: Abrir en nueva pestaña para trigger de instalación PWA
+            else {
+                const newWindow = window.open(appLink, '_blank', 'noopener,noreferrer');
+                
+                if (newWindow) {
+                    showAlert(t('opening_app_for_installation'), 'success');
+                    
+                    // Cerrar la ventana después de un tiempo si el usuario no la cierra
+                    setTimeout(() => {
+                        if (newWindow && !newWindow.closed) {
+                            newWindow.close();
+                            showAlert(t('pwa_install_guide'), 'info');
+                        }
+                    }, 8000);
+                } else {
+                    showAlert(t('popup_blocked'), 'warning');
+                    // Fallback: abrir en la misma pestaña
+                    window.open(appLink, '_blank', 'noopener,noreferrer');
+                    showAlert(t('check_browser_menu'), 'info');
+                }
             }
             
         } catch (error) {
-            console.error('Error al abrir la aplicación:', error);
+            console.error('Error al instalar la aplicación:', error);
             showAlert(t('error_opening_app'), 'danger');
         } finally {
             setTimeout(() => setIsInstallingPWA(false), 2000);
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN: EDITAR POST (solo para el dueño)
+    // 🔷 NUEVA FUNCIÓN MEJORADA: EDITAR POST (dueño O admin)
     const handleEditPost = (e) => {
         e?.stopPropagation();
         
@@ -298,9 +335,9 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
             return;
         }
 
-        // Verificar si el usuario es el dueño del post
-        if (auth.user._id !== post.user?._id) {
-            showAlert(t('not_post_owner'), 'warning');
+        // Verificar si el usuario puede editar el post (dueño O admin)
+        if (!canEditPost) {
+            showAlert(t('not_post_owner_or_admin'), 'warning');
             return;
         }
 
@@ -366,6 +403,12 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
             case 'contact':
                 handleChatWithOwner();
                 break;
+            case 'install':
+                handleInstallPostPWA();
+                break;
+            case 'visit':
+                handleVisitApp();
+                break;
             case 'edit':
                 handleEditPost();
                 break;
@@ -382,9 +425,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                 break;
         }
     };
-
-    // Verificar si el usuario es el dueño del post
-    const isPostOwner = auth.user?._id === post.user?._id;
 
     // 🔷 SI ESTAMOS EN LA PÁGINA DE DETALLE Y hideCard ES true, NO MOSTRAR EL CARD
     if (isDetailPage && hideCard) {
@@ -421,7 +461,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                         </Alert>
                     )}
 
-                    {/* Header con título y acciones - MEJORADO ALINEACIÓN */}
+                    {/* Header con título y acciones - SIMPLIFICADO */}
                     <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
                         <Col>
                             <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
@@ -474,129 +514,92 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                         </Col>
                         
                         <Col xs="auto">
-                            <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
-                                {/* Icono de chat con el dueño */}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={<Tooltip>{t('chat_with_developer')}</Tooltip>}
+                            {/* SOLO EL ICONO DE TRES PUNTOS EN EL HEADER */}
+                            <Dropdown>
+                                <Dropdown.Toggle 
+                                    variant={theme ? "dark" : "light"} 
+                                    size="sm"
+                                    className="border-0 shadow-none"
+                                    style={{
+                                        background: 'transparent',
+                                        padding: '4px 8px'
+                                    }}
                                 >
-                                    <i 
-                                        className="fas fa-comment-dots text-muted"
-                                        style={{ 
-                                            cursor: 'pointer', 
-                                            fontSize: '1.1rem',
-                                            transition: 'color 0.2s ease'
-                                        }}
-                                        onClick={handleChatWithOwner}
-                                        onMouseEnter={(e) => e.target.style.color = '#007bff'}
-                                        onMouseLeave={(e) => e.target.style.color = '#6c757d'}
-                                    />
-                                </OverlayTrigger>
+                                    <i className="fas fa-ellipsis-h text-muted" />
+                                </Dropdown.Toggle>
 
-                                {/* NUEVO: Icono para instalar PWA de la aplicación del post */}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip>
-                                            {isInstallingPWA ? t('installing_app') : t('install_this_app')}
-                                        </Tooltip>
-                                    }
-                                >
-                                    <i 
-                                        className={isInstallingPWA ? "fas fa-spinner fa-spin text-warning" : "fas fa-rocket text-muted"}
-                                        style={{ 
-                                            cursor: isInstallingPWA ? 'not-allowed' : 'pointer', 
-                                            fontSize: '1.1rem',
-                                            transition: 'color 0.2s ease'
-                                        }}
-                                        onClick={handleInstallPostPWA}
-                                        onMouseEnter={(e) => {
-                                            if (!isInstallingPWA) {
-                                                e.target.style.color = '#FF6B35';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isInstallingPWA) {
-                                                e.target.style.color = '#6c757d';
-                                            }
-                                        }}
-                                    />
-                                </OverlayTrigger>
-
-                                {/* Icono para visitar app con campo link */}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={<Tooltip>{t('visit_live_app')}</Tooltip>}
-                                >
-                                    <i 
-                                        className="fas fa-external-link-alt text-muted"
-                                        style={{ 
-                                            cursor: 'pointer', 
-                                            fontSize: '1.1rem',
-                                            transition: 'color 0.2s ease'
-                                        }}
-                                        onClick={handleVisitApp}
-                                        onMouseEnter={(e) => e.target.style.color = '#28a745'}
-                                        onMouseLeave={(e) => e.target.style.color = '#6c757d'}
-                                    />
-                                </OverlayTrigger>
-
-                                {/* Menú de tres puntos MEJORADO - SIN COMPARTIR */}
-                                <Dropdown>
-                                    <Dropdown.Toggle 
-                                        variant={theme ? "dark" : "light"} 
-                                        size="sm"
-                                        className="border-0 shadow-none"
-                                        style={{
-                                            background: 'transparent',
-                                            padding: '4px 8px'
-                                        }}
+                                <Dropdown.Menu className={theme ? 'bg-dark text-light' : ''}>
+                                    {/* Chat con el dueño */}
+                                    <Dropdown.Item 
+                                        onClick={() => handleThreeDotsMenu('contact')}
+                                        className={theme ? 'text-light' : ''}
                                     >
-                                        <i className="fas fa-ellipsis-h text-muted" />
-                                    </Dropdown.Toggle>
+                                        <i className={getIconClass("fas fa-comments")} />
+                                        {t('chat_with_developer')}
+                                    </Dropdown.Item>
 
-                                    <Dropdown.Menu className={theme ? 'bg-dark text-light' : ''}>
-                                        {/* Opción de contacto */}
+                                    {/* Instalar PWA */}
+                                    <Dropdown.Item 
+                                        onClick={() => handleThreeDotsMenu('install')}
+                                        className={theme ? 'text-light' : ''}
+                                        disabled={isInstallingPWA}
+                                    >
+                                        <i className={getIconClass(isInstallingPWA ? "fas fa-spinner fa-spin" : "fas fa-rocket")} />
+                                        {isInstallingPWA ? t('installing_app') : t('install_this_app')}
+                                    </Dropdown.Item>
+
+                                    {/* Visitar aplicación */}
+                                    <Dropdown.Item 
+                                        onClick={() => handleThreeDotsMenu('visit')}
+                                        className={theme ? 'text-light' : ''}
+                                    >
+                                        <i className={getIconClass("fas fa-external-link-alt")} />
+                                        {t('visit_live_app')}
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Divider />
+
+                                    {/* Editar post (solo para dueño O admin) */}
+                                    {canEditPost && (
                                         <Dropdown.Item 
-                                            onClick={() => handleThreeDotsMenu('contact')}
+                                            onClick={() => handleThreeDotsMenu('edit')}
                                             className={theme ? 'text-light' : ''}
                                         >
-                                            <i className={getIconClass("fas fa-comment")} />
-                                            {t('contact_developer')}
+                                            <i className={getIconClass("fas fa-edit")} />
+                                            {auth.user.role === "admin" ? `${t('edit_post')} (Admin)` : t('edit_post')}
                                         </Dropdown.Item>
+                                    )}
 
-                                        {/* OPCIÓN: Editar post (solo para dueño) */}
-                                        {isPostOwner && (
-                                            <>
-                                                <Dropdown.Item 
-                                                    onClick={() => handleThreeDotsMenu('edit')}
-                                                    className={theme ? 'text-light' : ''}
-                                                >
-                                                    <i className={getIconClass("fas fa-edit")} />
-                                                    {t('edit_post')}
-                                                </Dropdown.Item>
-                                                <Dropdown.Divider />
-                                            </>
-                                        )}
+                                    {/* Ver detalles */}
+                                    <Dropdown.Item 
+                                        onClick={() => handleThreeDotsMenu('details')}
+                                        className={theme ? 'text-light' : ''}
+                                    >
+                                        <i className={getIconClass("fas fa-info-circle")} />
+                                        {t('view_details')}
+                                    </Dropdown.Item>
 
-                                        <Dropdown.Item 
-                                            onClick={() => handleThreeDotsMenu('details')}
-                                            className={theme ? 'text-light' : ''}
-                                        >
-                                            <i className={getIconClass("fas fa-info-circle")} />
-                                            {t('view_details')}
-                                        </Dropdown.Item>
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item 
-                                            onClick={() => handleThreeDotsMenu('report')}
-                                            className="text-danger"
-                                        >
-                                            <i className={getIconClass("fas fa-flag")} />
-                                            {t('report')}
-                                        </Dropdown.Item>
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
+                                    {/* Compartir */}
+                                    <Dropdown.Item 
+                                        onClick={() => setIsShare(true)}
+                                        className={theme ? 'text-light' : ''}
+                                    >
+                                        <i className={getIconClass("fas fa-share")} />
+                                        {t('share')}
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Divider />
+
+                                    {/* Reportar */}
+                                    <Dropdown.Item 
+                                        onClick={() => handleThreeDotsMenu('report')}
+                                        className="text-danger"
+                                    >
+                                        <i className={getIconClass("fas fa-flag")} />
+                                        {t('report')}
+                                    </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </Col>
                     </Row>
 
