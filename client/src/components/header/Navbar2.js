@@ -15,10 +15,10 @@ import {
   FaFacebookMessenger,
   FaDownload,
   FaRocket,
-  FaMobileAlt,
-  FaCheckCircle
+  FaUserCog, // ✅ NUEVO ICONO PARA ROLES
+  FaUsers    // ✅ ICONO ALTERNATIVO PARA ROLES
 } from 'react-icons/fa';
-import { Navbar, Container, NavDropdown, Badge, Alert, Tooltip, OverlayTrigger } from 'react-bootstrap';
+import { Navbar, Container, NavDropdown, Badge, Alert } from 'react-bootstrap';
 import LanguageSelectorpc from '../LanguageSelectorpc';
 
 const Navbar2 = () => {
@@ -31,309 +31,121 @@ const Navbar2 = () => {
   const [userRole, setUserRole] = useState(auth.user?.role);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
   
-  // ✅ ESTADOS PWA MEJORADOS
+  // ✅ Estados para instalación PWA
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstallAlert, setShowInstallAlert] = useState(false);
   const [installAlertMessage, setInstallAlertMessage] = useState('');
-  const [pwaStatus, setPwaStatus] = useState('checking');
-  const [showPwaTooltip, setShowPwaTooltip] = useState(false);
 
-  // ✅ EFFECT PRINCIPAL PWA MEJORADO
-  useEffect(() => {
-    console.log('🚀 Iniciando configuración PWA...');
-    
-    const handleBeforeInstallPrompt = (e) => {
-      console.log('🎯 Evento beforeinstallprompt capturado!', e);
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setCanInstall(true);
-      setPwaStatus('ready');
-      
-      // DEBUG: Mostrar en consola para testing
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 PWA DEBUG - Prompt disponible:', {
-          platforms: e.platforms,
-          canInstall: true
-        });
-      }
-    };
-
-    const handleAppInstalled = () => {
-      console.log('🎉 PWA instalada exitosamente!');
-      setDeferredPrompt(null);
-      setCanInstall(false);
-      setPwaStatus('installed');
-      showInstallMessage(
-        t('pwa_install_success') || '¡App instalada correctamente! ¡Disfruta de la experiencia PWA!', 
-        'success'
-      );
-    };
-
-    // Verificar si ya está instalada
-    const checkIfInstalled = () => {
-      const installed = isAppInstalled();
-      console.log('📱 Verificando instalación PWA:', installed);
-      
-      if (installed) {
-        setPwaStatus('installed');
-        setCanInstall(false);
-      } else {
-        setPwaStatus('not_installed');
-      }
-    };
-
-    // Event listeners
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Verificar instalación inicial
-    checkIfInstalled();
-
-    // En desarrollo, simular evento después de 3 segundos
-    if (process.env.NODE_ENV === 'development' && !deferredPrompt) {
-      const simTimeout = setTimeout(() => {
-        if (!deferredPrompt && pwaStatus === 'checking') {
-          console.log('🔄 Desarrollo: Simulando verificación PWA...');
-          // Solo cambiar estado, no simular evento real
-          setPwaStatus('not_installed');
-        }
-      }, 3000);
-      
-      return () => clearTimeout(simTimeout);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, [t, deferredPrompt, pwaStatus]);
-
-  // ✅ EFFECT PARA IDIOMA
   useEffect(() => {
     if (lang && lang !== i18n.language) {
       i18n.changeLanguage(lang);
     }
   }, [lang, i18n]);
 
-  // ✅ EFFECT PARA ROL DE USUARIO
   useEffect(() => {
     if (auth.user?.role && auth.user.role !== userRole) {
       setUserRole(auth.user.role);
     }
   }, [auth.user?.role, userRole]);
 
-  // ✅ EFFECT PARA RESPONSIVE
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 700);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ✅ EFFECT PARA DEBUG PWA
+  // ✅ Effect para capturar el evento de instalación PWA
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 PWA STATE UPDATE:', {
-        canInstall,
-        deferredPrompt: !!deferredPrompt,
-        pwaStatus,
-        isInstalling,
-        isAppInstalled: isAppInstalled()
-      });
-    }
-  }, [canInstall, deferredPrompt, pwaStatus, isInstalling]);
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+      console.log('PWA: beforeinstallprompt event captured');
+    };
 
-  // ✅ FUNCIÓN MEJORADA DE INSTALACIÓN
+    const handleAppInstalled = () => {
+      console.log('PWA: App installed successfully');
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      showInstallMessage(t('pwa_install_success') || '¡App instalada correctamente!', 'success');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [t]);
+
+  // ✅ Función para mostrar mensajes de instalación
+  const showInstallMessage = (message, variant = 'info') => {
+    setInstallAlertMessage(message);
+    setShowInstallAlert(true);
+    setTimeout(() => {
+      setShowInstallAlert(false);
+    }, 4000);
+  };
+
+  // ✅ Función principal para instalar PWA
   const handleInstallPWA = async () => {
     if (!deferredPrompt) {
       showInstallMessage(
-        t('pwa_not_supported') || 'Tu navegador no soporta instalación de apps. Usa Chrome, Edge o Safari.', 
+        t('pwa_not_supported') || 'Tu navegador no soporta instalación de apps', 
         'warning'
       );
       return;
     }
 
-    if (isInstalling) {
-      showInstallMessage('La instalación ya está en progreso...', 'info');
-      return;
-    }
+    if (isInstalling) return;
 
     setIsInstalling(true);
-    setShowPwaTooltip(false);
 
     try {
-      console.log('📲 Ejecutando prompt de instalación...');
-      
-      // Mostrar el prompt nativo
       deferredPrompt.prompt();
-      
-      // Esperar la decisión del usuario
       const { outcome } = await deferredPrompt.userChoice;
       
-      console.log('📋 Resultado de instalación:', outcome);
-      
       if (outcome === 'accepted') {
+        console.log('PWA: User accepted the install prompt');
         showInstallMessage(
-          t('pwa_install_started') || '¡Instalación iniciada! La app se agregará a tu pantalla de inicio.', 
+          t('pwa_install_started') || 'Instalación iniciada...', 
           'success'
         );
-        
-        // Analytics o tracking podría ir aquí
-        if (window.gtag) {
-          window.gtag('event', 'pwa_install_accepted');
-        }
       } else {
+        console.log('PWA: User dismissed the install prompt');
         showInstallMessage(
-          t('pwa_install_declined') || 'Instalación cancelada. Puedes instalar la app luego desde el menú.', 
+          t('pwa_install_declined') || 'Instalación cancelada', 
           'info'
         );
-        
-        // Reactivar el botón después de un tiempo
-        setTimeout(() => {
-          setCanInstall(true);
-        }, 30000); // 30 segundos
       }
       
-      // Limpiar el prompt independientemente del resultado
       setDeferredPrompt(null);
+      setCanInstall(false);
       
     } catch (error) {
-      console.error('❌ Error durante la instalación PWA:', error);
+      console.error('PWA: Error during installation:', error);
       showInstallMessage(
-        t('pwa_install_error') || 'Error durante la instalación. Intenta nuevamente.', 
+        t('pwa_install_error') || 'Error durante la instalación', 
         'danger'
       );
-      
-      // Reactivar en caso de error
-      setCanInstall(true);
     } finally {
       setIsInstalling(false);
     }
   };
 
-  // ✅ FUNCIÓN MEJORADA DE VERIFICACIÓN DE INSTALACIÓN
+  // ✅ Verificar si ya está instalado
   const isAppInstalled = () => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isNavigatorStandalone = window.navigator.standalone;
-    const isReferrer = document.referrer.includes('android-app://');
-    
-    const installed = isStandalone || isNavigatorStandalone || isReferrer;
-    
-    if (installed) {
-      console.log('🏠 PWA detectada como instalada');
-    }
-    
-    return installed;
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone ||
+           document.referrer.includes('android-app://');
   };
 
-  // ✅ FUNCIÓN MEJORADA DE MENSAJES
-  const showInstallMessage = (message, variant = 'info') => {
-    setInstallAlertMessage(message);
-    setShowInstallAlert(true);
-    
-    // Auto-ocultar después de tiempo según el tipo
-    const timeout = variant === 'success' ? 5000 : 4000;
-    setTimeout(() => {
-      setShowInstallAlert(false);
-    }, timeout);
-  };
-
-  // ✅ RENDER CONDICIONAL DEL BOTÓN PWA
-  const renderPWAButton = () => {
-    // Si ya está instalado, no mostrar botón
-    if (isAppInstalled()) {
-      return (
-        <OverlayTrigger
-          placement="bottom"
-          overlay={
-            <Tooltip id="pwa-installed-tooltip">
-              {t('pwa_already_installed') || 'App ya instalada'}
-            </Tooltip>
-          }
-        >
-          <div
-            className="d-flex align-items-center justify-content-center"
-            style={{
-              width: isMobile ? '40px' : '45px',
-              height: isMobile ? '40px' : '45px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
-              cursor: 'default'
-            }}
-          >
-            <FaCheckCircle size={isMobile ? 18 : 20} style={{ color: 'white' }} />
-          </div>
-        </OverlayTrigger>
-      );
-    }
-
-    // Si puede instalar, mostrar botón de instalación
-    if (canInstall) {
-      const tooltipText = isInstalling 
-        ? (t('pwa_installing') || 'Instalando...')
-        : (t('install_app') || 'Instalar App en tu dispositivo');
-
-      return (
-        <OverlayTrigger
-          placement="bottom"
-          overlay={<Tooltip id="pwa-install-tooltip">{tooltipText}</Tooltip>}
-        >
-          <div
-            onClick={handleInstallPWA}
-            className="d-flex align-items-center justify-content-center icon-button"
-            style={{
-              cursor: isInstalling ? 'not-allowed' : 'pointer',
-              width: isMobile ? '40px' : '45px',
-              height: isMobile ? '40px' : '45px',
-              borderRadius: '12px',
-              background: isInstalling 
-                ? 'linear-gradient(135deg, #ffa726 0%, #ff9800 100%)'
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-              opacity: isInstalling ? 0.8 : 1,
-              animation: isInstalling ? 'none' : 'pulse 2s infinite'
-            }}
-          >
-            {isInstalling ? (
-              <div className="spinner-border spinner-border-sm" style={{ color: 'white' }} />
-            ) : (
-              <FaDownload size={isMobile ? 18 : 20} style={{ color: 'white' }} />
-            )}
-          </div>
-        </OverlayTrigger>
-      );
-    }
-
-    // Si no puede instalar pero está en desarrollo, mostrar botón informativo
-    if (process.env.NODE_ENV === 'development' && pwaStatus === 'not_installed') {
-      return (
-        <OverlayTrigger
-          placement="bottom"
-          overlay={
-            <Tooltip id="pwa-dev-tooltip">
-              PWA disponible en producción o con HTTPS
-            </Tooltip>
-          }
-        >
-          <div
-            className="d-flex align-items-center justify-content-center"
-            style={{
-              width: isMobile ? '40px' : '45px',
-              height: isMobile ? '40px' : '45px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #9e9e9e 0%, #757575 100%)',
-              cursor: 'help'
-            }}
-          >
-            <FaMobileAlt size={isMobile ? 18 : 20} style={{ color: 'white' }} />
-          </div>
-        </OverlayTrigger>
-      );
-    }
-
-    return null;
+  // ✅ Función para navegar a gestión de roles (solo admin)
+  const handleRolesManagement = () => {
+    history.push('/admin/roles');
   };
 
   if (!settings) {
@@ -377,35 +189,24 @@ const Navbar2 = () => {
 
   return (
     <div>
-      {/* ✅ ALERT MEJORADO PARA MENSAJES PWA */}
+      {/* ✅ Alert para mensajes de instalación */}
       {showInstallAlert && (
         <Alert 
-          variant={
-            installAlertMessage.includes('éxito') || installAlertMessage.includes('correctamente') ? 'success' : 
-            installAlertMessage.includes('Error') || installAlertMessage.includes('error') ? 'danger' :
-            installAlertMessage.includes('cancelada') ? 'info' : 'warning'
-          }
-          className="mb-0 text-center py-2 fade-in"
+          variant={installAlertMessage.includes('éxito') || installAlertMessage.includes('correctamente') ? 'success' : 
+                  installAlertMessage.includes('Error') ? 'danger' : 'info'}
+          className="mb-0 text-center py-2"
           style={{
             position: 'fixed',
-            top: '70px',
+            top: '80px',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 9999,
             minWidth: '300px',
-            maxWidth: '90%',
             borderRadius: '10px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            border: 'none',
-            fontSize: '14px',
-            fontWeight: '500'
+            boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
           }}
         >
-          <div className="d-flex align-items-center justify-content-center">
-            {installAlertMessage.includes('éxito') && <FaCheckCircle className="me-2" />}
-            {installAlertMessage.includes('Error') && <FaRocket className="me-2" />}
-            {installAlertMessage}
-          </div>
+          {installAlertMessage}
         </Alert>
       )}
 
@@ -415,15 +216,18 @@ const Navbar2 = () => {
           zIndex: 1030,
           marginTop: isMobile ? '55px' : '0',
           background: settings.style
-            ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
           padding: isMobile ? '8px 0' : '12px 0',
-          boxShadow: '0 2px 20px rgba(0,0,0,0.08)'
+          boxShadow: '0 4px 25px rgba(0,0,0,0.1)',
+          borderBottom: settings.style 
+            ? '1px solid rgba(255,255,255,0.1)' 
+            : '1px solid rgba(226, 232, 240, 0.8)'
         }}
         className={settings.style ? "navbar-dark" : "navbar-light"}
       >
         <Container fluid className="align-items-center justify-content-between">
-          {/* Logo y título */}
+          {/* Logo y título - NUEVO DISEÑO */}
           <div className="d-flex align-items-center">
             <Link
               to="/"
@@ -432,105 +236,166 @@ const Navbar2 = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: isMobile ? '45px' : '55px',
-                height: isMobile ? '45px' : '55px',
+                width: isMobile ? '42px' : '50px',
+                height: isMobile ? '42px' : '50px',
                 marginLeft: lang === 'ar' ? '0' : '8px',
                 marginRight: lang === 'ar' ? '8px' : (isMobile ? '8px' : '12px'),
                 padding: '0',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+                boxShadow: '0 6px 20px rgba(139, 92, 246, 0.3)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 12px 25px rgba(139, 92, 246, 0.4)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.3)';
               }}
             >
-              <FaHome size={isMobile ? 24 : 28} style={{ color: 'white' }} />
+              <FaHome size={isMobile ? 20 : 22} style={{ color: 'white' }} />
             </Link>
 
             <Navbar.Brand href="/" className="py-2 d-none d-lg-block mb-0">
               <Card.Title
                 className="mb-0"
                 style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  fontWeight: 'bold',
-                  fontSize: '1.5rem'
+                  fontWeight: '800',
+                  fontSize: '1.6rem',
+                  letterSpacing: '-0.5px'
                 }}
               >
-                {t('appName')} {process.env.NODE_ENV === 'development' && '(Dev)'}
+                {t('appName')}
               </Card.Title>
             </Navbar.Brand>
           </div>
 
-          {/* Iconos de navegación */}
-          <div className="d-flex align-items-center" style={{ gap: isMobile ? '8px' : '16px' }}>
+          {/* Iconos de navegación - NUEVO DISEÑO */}
+          <div className="d-flex align-items-center" style={{ gap: isMobile ? '10px' : '18px' }}>
             {/* Selector de idioma para desktop */}
             <div className="d-none d-lg-block">
               <LanguageSelectorpc />
             </div>
 
-            {/* ✅ BOTÓN PWA MEJORADO */}
-            {renderPWAButton()}
+            {/* ✅ Botón Instalar App PWA */}
+            {canInstall && !isAppInstalled() && (
+              <div
+                onClick={handleInstallPWA}
+                className="d-flex align-items-center justify-content-center icon-button"
+                style={{
+                  cursor: isInstalling ? 'not-allowed' : 'pointer',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  background: isInstalling 
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                    : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 6px 18px rgba(16, 185, 129, 0.3)',
+                  opacity: isInstalling ? 0.7 : 1
+                }}
+                title={isInstalling 
+                  ? (t('pwa_installing') || 'Instalando...') 
+                  : (t('install_app') || 'Instalar App')
+                }
+              >
+                {isInstalling ? (
+                  <div className="spinner-border spinner-border-sm" style={{ color: 'white' }} />
+                ) : (
+                  <FaDownload
+                    size={isMobile ? 16 : 18}
+                    style={{ color: 'white' }}
+                  />
+                )}
+              </div>
+            )}
 
-            {/* Botón Agregar Post */}
+            {/* ✅ Botón Gestión de Roles (SOLO para admin) */}
+            {auth.user && userRole === "admin" && (
+              <div
+                onClick={handleRolesManagement}
+                className="d-flex align-items-center justify-content-center icon-button"
+                style={{
+                  cursor: 'pointer',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 6px 18px rgba(249, 115, 22, 0.3)'
+                }}
+                title={t('manage_roles') || 'Gestión de Roles'}
+              >
+                <FaUserCog
+                  size={isMobile ? 16 : 18}
+                  style={{ color: 'white' }}
+                />
+              </div>
+            )}
+
+            {/* Botón Agregar Post (solo para usuarios autenticados con rol especial) */}
             {auth.user && (userRole === "Super-utilisateur" || userRole === "admin") && (
               <div
                 onClick={handleCreatePost}
                 className="d-flex align-items-center justify-content-center icon-button"
                 style={{
                   cursor: 'pointer',
-                  width: isMobile ? '40px' : '45px',
-                  height: isMobile ? '40px' : '45px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                  boxShadow: '0 6px 18px rgba(139, 92, 246, 0.3)'
                 }}
                 title={t('addPost')}
               >
-                <FaPlus size={isMobile ? 18 : 20} style={{ color: 'white' }} />
+                <FaPlus
+                  size={isMobile ? 16 : 18}
+                  style={{ color: 'white' }}
+                />
               </div>
             )}
 
-            {/* Messenger */}
+            {/* Messenger (solo usuarios autenticados) */}
             {auth.user && (
               <Link
                 to="/message"
                 className="position-relative d-flex align-items-center justify-content-center icon-button text-decoration-none"
                 style={{
-                  width: isMobile ? '40px' : '45px',
-                  height: isMobile ? '40px' : '45px',
-                  borderRadius: '12px',
-                  backgroundColor: settings.style ? 'rgba(255,255,255,0.1)' : 'rgba(102, 126, 234, 0.1)',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  backgroundColor: settings.style ? 'rgba(255,255,255,0.08)' : 'rgba(139, 92, 246, 0.08)',
+                  border: settings.style ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(139, 92, 246, 0.1)',
                   transition: 'all 0.3s ease',
                 }}
                 title={t('messages')}
               >
                 <FaFacebookMessenger
-                  size={isMobile ? 20 : 22}
-                  style={{ color: unreadMessages > 0 ? '#00b2ff' : '#667eea' }}
+                  size={isMobile ? 18 : 20}
+                  style={{ 
+                    color: unreadMessages > 0 ? '#06b6d4' : 
+                           settings.style ? '#cbd5e1' : '#64748b'
+                  }}
                 />
                 {unreadMessages > 0 && (
                   <Badge
                     pill
                     style={{
-                      fontSize: '0.65rem',
+                      fontSize: '0.6rem',
                       position: 'absolute',
-                      top: '-2px',
-                      [lang === 'ar' ? 'left' : 'right']: '-2px',
-                      padding: '4px 7px',
-                      background: 'linear-gradient(135deg, #00b2ff 0%, #006aff 100%)',
-                      border: '2px solid white',
-                      boxShadow: '0 2px 8px rgba(0, 178, 255, 0.4)'
+                      top: '-4px',
+                      [lang === 'ar' ? 'left' : 'right']: '-4px',
+                      padding: '3px 6px',
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%)',
+                      border: '2px solid' + (settings.style ? '#1e293b' : '#ffffff'),
+                      boxShadow: '0 3px 10px rgba(6, 182, 212, 0.4)'
                     }}
                   >
                     {unreadMessages > 9 ? '9+' : unreadMessages}
@@ -539,36 +404,40 @@ const Navbar2 = () => {
               </Link>
             )}
 
-            {/* Notificaciones */}
+            {/* Notificaciones (solo usuarios autenticados) */}
             {auth.user && (
               <Link
                 to="/notify"
                 className="position-relative d-flex align-items-center justify-content-center icon-button text-decoration-none"
                 style={{
-                  width: isMobile ? '40px' : '45px',
-                  height: isMobile ? '40px' : '45px',
-                  borderRadius: '12px',
-                  backgroundColor: settings.style ? 'rgba(255,255,255,0.1)' : 'rgba(102, 126, 234, 0.1)',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  backgroundColor: settings.style ? 'rgba(255,255,255,0.08)' : 'rgba(239, 68, 68, 0.08)',
+                  border: settings.style ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(239, 68, 68, 0.1)',
                   transition: 'all 0.3s ease',
                 }}
                 title={t('notifications')}
               >
                 <FaBell
-                  size={isMobile ? 20 : 22}
-                  style={{ color: unreadNotifications > 0 ? '#f5576c' : '#667eea' }}
+                  size={isMobile ? 18 : 20}
+                  style={{ 
+                    color: unreadNotifications > 0 ? '#ef4444' : 
+                           settings.style ? '#cbd5e1' : '#64748b'
+                  }}
                 />
                 {unreadNotifications > 0 && (
                   <Badge
                     pill
                     style={{
-                      fontSize: '0.65rem',
+                      fontSize: '0.6rem',
                       position: 'absolute',
-                      top: '-2px',
-                      [lang === 'ar' ? 'left' : 'right']: '-2px',
-                      padding: '4px 7px',
-                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                      border: '2px solid white',
-                      boxShadow: '0 2px 8px rgba(245, 87, 108, 0.4)'
+                      top: '-4px',
+                      [lang === 'ar' ? 'left' : 'right']: '-4px',
+                      padding: '3px 6px',
+                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                      border: '2px solid' + (settings.style ? '#1e293b' : '#ffffff'),
+                      boxShadow: '0 3px 10px rgba(239, 68, 68, 0.4)'
                     }}
                   >
                     {unreadNotifications > 9 ? '9+' : unreadNotifications}
@@ -577,7 +446,7 @@ const Navbar2 = () => {
               </Link>
             )}
 
-            {/* Avatar o Dropdown */}
+            {/* Avatar o Dropdown según autenticación */}
             {auth.user ? (
               <Link
                 to="/profileinfouser"
@@ -587,32 +456,38 @@ const Navbar2 = () => {
                 <div
                   className="dropdown-avatar icon-button"
                   style={{
-                    width: isMobile ? '40px' : '45px',
-                    height: isMobile ? '40px' : '45px',
-                    borderRadius: '12px',
-                    padding: '0',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                    width: isMobile ? '38px' : '42px',
+                    height: isMobile ? '38px' : '42px',
+                    borderRadius: '14px',
+                    padding: '2px',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                    boxShadow: '0 6px 20px rgba(139, 92, 246, 0.3)',
                     transition: 'all 0.3s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden'
+                    justifyContent: 'center'
                   }}
                 >
-                  <Avatar
-                    src={auth.user.avatar}
-                    size="medium-avatar"
+                  <div
                     style={{
-                      borderRadius: '10px',
-                      objectFit: 'cover',
                       width: '100%',
                       height: '100%',
-                      margin: '0',
-                      padding: '0',
-                      display: 'block'
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      background: settings.style ? '#1e293b' : '#ffffff'
                     }}
-                  />
+                  >
+                    <Avatar
+                      src={auth.user.avatar}
+                      size="medium-avatar"
+                      style={{
+                        borderRadius: '12px',
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: '100%'
+                      }}
+                    />
+                  </div>
                 </div>
               </Link>
             ) : (
@@ -621,10 +496,11 @@ const Navbar2 = () => {
                 title={
                   <div
                     style={{
-                      width: isMobile ? '40px' : '45px',
-                      height: isMobile ? '40px' : '45px',
-                      borderRadius: '12px',
-                      backgroundColor: settings.style ? 'rgba(255,255,255,0.1)' : 'rgba(102, 126, 234, 0.1)',
+                      width: isMobile ? '38px' : '42px',
+                      height: isMobile ? '38px' : '42px',
+                      borderRadius: '14px',
+                      backgroundColor: settings.style ? 'rgba(255,255,255,0.08)' : 'rgba(139, 92, 246, 0.08)',
+                      border: settings.style ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(139, 92, 246, 0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -632,20 +508,25 @@ const Navbar2 = () => {
                     }}
                     className="icon-button"
                   >
-                    <FaUserCircle size={isMobile ? 24 : 28} style={{ color: '#667eea' }} />
+                    <FaUserCircle 
+                      size={isMobile ? 20 : 22} 
+                      style={{ 
+                        color: settings.style ? '#cbd5e1' : '#8b5cf6'
+                      }} 
+                    />
                   </div>
                 }
                 id="nav-guest-dropdown"
                 className="custom-dropdown"
               >
-                <MenuItem icon={FaSignInAlt} iconColor="#28a745" to="/login">
+                <MenuItem icon={FaSignInAlt} iconColor="#10b981" to="/login">
                   {t('login')}
                 </MenuItem>
-                <MenuItem icon={FaUserPlus} iconColor="#667eea" to="/register">
+                <MenuItem icon={FaUserPlus} iconColor="#8b5cf6" to="/register">
                   {t('register')}
                 </MenuItem>
                 <NavDropdown.Divider style={{ margin: '8px 16px' }} />
-                <MenuItem icon={FaInfoCircle} iconColor="#6c757d" to="/infoaplicacionn">
+                <MenuItem icon={FaInfoCircle} iconColor="#64748b" to="/infoaplicacionn">
                   {t('appInfo')}
                 </MenuItem>
               </NavDropdown>
@@ -654,37 +535,25 @@ const Navbar2 = () => {
         </Container>
       </Navbar>
 
-      {/* CSS MEJORADO */}
+      {/* CSS personalizado */}
       <style jsx>{`
         .icon-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+          transform: translateY(-3px) scale(1.05);
+          box-shadow: 0 12px 25px rgba(139, 92, 246, 0.2) !important;
         }
 
         .custom-menu-item:hover {
-          background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
-          transform: translateX(4px);
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%) !important;
+          transform: translateX(5px);
+          border-left: 3px solid #8b5cf6;
         }
 
         .dropdown-menu {
           border: none !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
-          border-radius: 15px !important;
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
-        }
-
-        .fade-in {
-          animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translate(-50%, -10px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
+          box-shadow: 0 15px 50px rgba(0,0,0,0.15) !important;
+          border-radius: 18px !important;
+          backdrop-filter: blur(10px);
+          background: rgba(255,255,255,0.95) !important;
         }
       `}</style>
     </div>
