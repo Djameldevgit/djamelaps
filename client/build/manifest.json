@@ -12,13 +12,13 @@
       "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"    
+      "purpose": "any maskable"
     },
     {
-      "src": "logo512.png", 
-      "type": "image/png",
+      "src": "logo512.png",
+      "type": "image/png", 
       "sizes": "512x512",
-      "purpose": "any maskable"   
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
@@ -26,8 +26,8 @@
   "theme_color": "#000000",
   "background_color": "#ffffff",
   "scope": "/",
-  "orientation": "portrait-primary",   
-  "categories": ["business", "productivity"],   
-  "lang": "es",   
-  "prefer_related_applications": false   
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "fr",
+  "prefer_related_applications": false
 }
