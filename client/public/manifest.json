@@ -1,6 +1,6 @@
 {
   "short_name": "Djamel APS",
-  "name": "Djamel APS - Plataforma de Aplicaciones",
+  "name": "Djamel APS - Plataforma PWA",
   "description": "Plataforma para descubrir y compartir aplicaciones web progresivas",
   "icons": [
     {
@@ -16,18 +16,71 @@
     },
     {
       "src": "logo512.png",
-      "type": "image/png", 
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-256.png", 
+      "sizes": "256x256",
+      "type": "image/png"
     }
   ],
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#667eea",
   "background_color": "#ffffff",
   "scope": "/",
   "orientation": "portrait-primary",
-  "categories": ["business", "productivity"],
-  "lang": "fr",
-  "prefer_related_applications": false
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "es",
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "screenshot-narrow.png",
+      "sizes": "375x812", 
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Publicación",
+      "short_name": "Publicar",
+      "description": "Crear una nueva publicación",
+      "url": "/createpost?source=shortcut",
+      "icons": [
+        {
+          "src": "icon-shortcut.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Perfil",
+      "short_name": "Perfil",
+      "description": "Ver mi perfil",
+      "url": "/profile?source=shortcut",
+      "icons": [
+        {
+          "src": "icon-profile.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
 }
