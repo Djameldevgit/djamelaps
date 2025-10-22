@@ -1,51 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <link rel="icon" href="./icon-web-01.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="description" content="Djamel APS - Plataforma de aplicaciones web progresivas" />
-  
-  <!-- ✅ MANIFEST - Bien configurado -->
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials" />
-  
-  <!-- 🍎 MEJORA Apple Meta Tags -->
-  <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Djamel APS" />
-  
-  <!-- ⚠️ CORRECCIÓN: Eliminar Bootstrap duplicado -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  
-  <!-- Iconos y Fuentes -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  
-  <title>Djamel APS</title>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Djamel APS - Plataforma de aplicaciones web" />
+    
+    <!-- MANIFEST PWA -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials" />
+    
+    <!-- APPLE SPECIFIC -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Djamel APS" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    
+    <!-- MICROSOFT SPECIFIC -->
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/logo192.png" />
+    
+    <title>Djamel APS</title>
 </head>
 <body>
-  <noscript>Necesitas habilitar JavaScript para ejecutar esta app.</noscript>
-  <div id="root"></div>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
 
-  <!-- ✅ Service Worker - Bien implementado -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-          .then(function(registration) {
-            console.log('✅ ServiceWorker registrado: ', registration.scope);
-            registration.update();
-          })
-          .catch(function(error) {
-            console.log('❌ ServiceWorker falló: ', error);
-          });
-      });
-    }
-  </script>
-
-  <!-- 🚀 SOLO una versión de Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SERVICE WORKER REGISTRATION -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        
+                        // Verificar actualizaciones periódicamente
+                        setInterval(() => {
+                            registration.update();
+                        }, 60 * 60 * 1000); // Cada hora
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
