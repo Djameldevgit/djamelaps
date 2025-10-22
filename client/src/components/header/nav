@@ -1,0 +1,346 @@
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
+import { Link, useHistory } from 'react-router-dom';
+import Avatar from '../Avatar';
+import Card from 'react-bootstrap/Card';
+import {
+ 
+  FaHome,
+  FaUserCircle,
+  FaSignInAlt,
+  FaUserPlus,
+ 
+  FaInfoCircle,
+ 
+  FaDownload,
+ 
+} from 'react-icons/fa';
+import { Navbar, Container, NavDropdown,   Alert } from 'react-bootstrap';
+import LanguageSelectorpc from '../LanguageSelectorpc';
+
+const Navbar2 = () => {
+  const { auth, notify, settings } = useSelector((state) => state);
+  const { languageReducer } = useSelector(state => state);
+  const history = useHistory();
+  const { t, i18n } = useTranslation(['serviceWorker']);
+  const lang = languageReducer.language || 'fr';
+  
+  const [userRole, setUserRole] = useState(auth.user?.role);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
+  
+  // Estados para instalación PWA - PARA TODOS LOS USUARIOS
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [showInstallAlert, setShowInstallAlert] = useState(false);
+  const [installAlertMessage, setInstallAlertMessage] = useState('');
+
+  useEffect(() => {
+    if (lang && lang !== i18n.language) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
+
+  useEffect(() => {
+    if (auth.user?.role && auth.user.role !== userRole) {
+      setUserRole(auth.user.role);
+    }
+  }, [auth.user?.role, userRole]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 700);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // ✅ Effect para PWA - FUNCIONA PARA TODOS (con auth y sin auth)
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+      console.log('PWA: beforeinstallprompt event captured');
+    };
+
+    const handleAppInstalled = () => {
+      console.log('PWA: App installed successfully');
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      showInstallMessage(t('pwa_install_success'), 'success');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [t]);
+
+  const showInstallMessage = (message, variant = 'info') => {
+    setInstallAlertMessage(message);
+    setShowInstallAlert(true);
+    setTimeout(() => {
+      setShowInstallAlert(false);
+    }, 4000);
+  };
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      showInstallMessage(t('pwa_not_supported'), 'warning');
+      return;
+    }
+
+    if (isInstalling) return;
+    setIsInstalling(true);
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        showInstallMessage(t('pwa_install_started'), 'success');
+      } else {
+        showInstallMessage(t('pwa_install_declined'), 'info');
+      }
+      
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      
+    } catch (error) {
+      console.error('PWA: Error during installation:', error);
+      showInstallMessage(t('pwa_install_error'), 'danger');
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
+  const isAppInstalled = () => {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone ||
+           document.referrer.includes('android-app://');
+  };
+
+  const handleRolesManagement = () => {
+    history.push('/admin/roles');
+  };
+
+  const handleCreatePost = () => {
+    history.push('/createpost');
+  };
+
+  const unreadNotifications = notify.data.filter(n => !n.isRead).length;
+  const unreadMessages = 0;
+
+  // MenuItem component
+  const MenuItem = ({ icon: Icon, iconColor, to, onClick, children }) => (
+    <NavDropdown.Item
+      as={to ? Link : 'button'}
+      to={to}
+      onClick={onClick}
+      className="custom-menu-item"
+      style={{
+        padding: '12px 20px',
+        transition: 'all 0.2s ease',
+        borderRadius: '8px',
+        margin: '2px 8px',
+        display: 'flex',
+        alignItems: 'center',
+        fontWeight: '500',
+        direction: lang === 'ar' ? 'rtl' : 'ltr',
+        textAlign: lang === 'ar' ? 'right' : 'left'
+      }}
+    >
+      <Icon className={lang === 'ar' ? "ms-3" : "me-3"} style={{ color: iconColor, fontSize: '1.1rem' }} />
+      <span>{children}</span>
+    </NavDropdown.Item>
+  );
+
+  if (!settings) {
+    return (
+      <nav className="navbar navbar-light bg-light">
+        <span className="navbar-brand">{t('loading')}</span>
+      </nav>
+    );
+  }
+
+  return (
+    <div>
+      {/* Alert para mensajes de instalación */}
+      {showInstallAlert && (
+        <Alert 
+          variant={installAlertMessage.includes('success') ? 'success' : 
+                  installAlertMessage.includes('Error') ? 'danger' : 'info'}
+          className="mb-0 text-center py-2"
+          style={{
+            position: 'fixed',
+            top: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: '300px',
+            borderRadius: '10px'
+          }}
+        >
+          {installAlertMessage}
+        </Alert>
+      )}
+
+      <Navbar
+        expand="lg"
+        style={{
+          zIndex: 1030,
+          marginTop: isMobile ? '55px' : '0',
+          background: settings.style
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
+          padding: isMobile ? '8px 0' : '12px 0',
+          boxShadow: '0 4px 25px rgba(0,0,0,0.1)'
+        }}
+        className={settings.style ? "navbar-dark" : "navbar-light"}
+      >
+        <Container fluid className="align-items-center justify-content-between">
+          {/* Logo y título */}
+          <div className="d-flex align-items-center">
+            <Link
+              to="/"
+              className="btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: isMobile ? '42px' : '50px',
+                height: isMobile ? '42px' : '50px',
+                marginLeft: lang === 'ar' ? '0' : '8px',
+                marginRight: lang === 'ar' ? '8px' : (isMobile ? '8px' : '12px'),
+                padding: '0',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                border: 'none',
+                borderRadius: '14px',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <FaHome size={isMobile ? 20 : 22} style={{ color: 'white' }} />
+            </Link>
+
+            <Navbar.Brand href="/" className="py-2 d-none d-lg-block mb-0">
+              <Card.Title
+                className="mb-0"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '800',
+                  fontSize: '1.6rem'
+                }}
+              >
+                {t('appName')}
+              </Card.Title>
+            </Navbar.Brand>
+          </div>
+
+          {/* Iconos de navegación - ICONO PWA VISIBLE PARA TODOS */}
+          <div className="d-flex align-items-center" style={{ gap: isMobile ? '10px' : '18px' }}>
+            {/* Selector de idioma */}
+            <div className="d-none d-lg-block">
+              <LanguageSelectorpc />
+            </div>
+
+            {/* ✅ BOTÓN INSTALAR PWA - VISIBLE PARA TODOS LOS USUARIOS */}
+            {canInstall && !isAppInstalled() && (
+              <div
+                onClick={handleInstallPWA}
+                className="d-flex align-items-center justify-content-center icon-button"
+                style={{
+                  cursor: isInstalling ? 'not-allowed' : 'pointer',
+                  width: isMobile ? '38px' : '42px',
+                  height: isMobile ? '38px' : '42px',
+                  borderRadius: '14px',
+                  background: isInstalling 
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                    : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 6px 18px rgba(16, 185, 129, 0.3)',
+                  opacity: isInstalling ? 0.7 : 1
+                }}
+                title={isInstalling ? t('pwa_installing') : t('install_app')}
+              >
+                {isInstalling ? (
+                  <div className="spinner-border spinner-border-sm" style={{ color: 'white' }} />
+                ) : (
+                  <FaDownload size={isMobile ? 16 : 18} style={{ color: 'white' }} />
+                )}
+              </div>
+            )}
+
+            {/* Resto de tu código existente... */}
+            {/* (Botones de admin, crear post, mensajes, notificaciones, etc.) */}
+            
+            {/* Avatar o Dropdown según autenticación */}
+            {auth.user ? (
+              <Link to="/profileinfouser" className="text-decoration-none" title={t('profile')}>
+                <div
+                  className="dropdown-avatar icon-button"
+                  style={{
+                    width: isMobile ? '38px' : '42px',
+                    height: isMobile ? '38px' : '42px',
+                    borderRadius: '14px',
+                    padding: '2px',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                    boxShadow: '0 6px 20px rgba(139, 92, 246, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <div style={{ width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+                    <Avatar
+                      src={auth.user.avatar}
+                      size="medium-avatar"
+                      style={{ borderRadius: '12px', objectFit: 'cover', width: '100%', height: '100%' }}
+                    />
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <NavDropdown
+                align="end"
+                title={
+                  <div
+                    style={{
+                      width: isMobile ? '38px' : '42px',
+                      height: isMobile ? '38px' : '42px',
+                      borderRadius: '14px',
+                      backgroundColor: settings.style ? 'rgba(255,255,255,0.08)' : 'rgba(139, 92, 246, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease'
+                    }}
+                    className="icon-button"
+                  >
+                    <FaUserCircle size={isMobile ? 20 : 22} style={{ color: settings.style ? '#cbd5e1' : '#8b5cf6' }} />
+                  </div>
+                }
+                id="nav-guest-dropdown"
+              >
+                <MenuItem icon={FaSignInAlt} iconColor="#10b981" to="/login">
+                  {t('login')}
+                </MenuItem>
+                <MenuItem icon={FaUserPlus} iconColor="#8b5cf6" to="/register">
+                  {t('register')}
+                </MenuItem>
+                <NavDropdown.Divider />
+                <MenuItem icon={FaInfoCircle} iconColor="#64748b" to="/infoaplicacionn">
+                  {t('appInfo')}
+                </MenuItem>
+              </NavDropdown>
+            )}
+          </div>
+        </Container>
+      </Navbar>
+    </div>
+  );
+};
+
+export default Navbar2;

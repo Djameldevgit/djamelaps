@@ -4,9 +4,16 @@ const urlsToCache = [
   '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-web-01.png',
+  '/logo192.png',
+  '/offline.html',
+  // ✅ Agregar rutas principales de tu app
+  '/home',
+  '/dashboard',
+  '/profile'
+  // Agrega aquí las rutas principales de tu React app
 ];
-
 // INSTALACIÓN
 self.addEventListener('install', (event) => {
   console.log('🔄 Service Worker: Instalando...');

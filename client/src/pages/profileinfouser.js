@@ -4,21 +4,17 @@ import { logout } from '../redux/actions/authAction';
 import { GLOBALTYPES } from '../redux/actions/globalTypes';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Modal, Alert, Tooltip, OverlayTrigger } from 'react-bootstrap';
 import {
   FaUserCircle, FaEnvelope, FaInfoCircle, FaComments, FaShareAlt,
   FaTools, FaShieldAlt, FaCog, FaBlog, FaUsers, FaClipboardList,
   FaUserCog, FaUserSlash, FaFlag, FaBan, FaShoppingCart, FaSignOutAlt,
-  FaPlus, FaCheckCircle, FaGlobe, FaSun, FaMoon
+  FaPlus, FaCheckCircle, FaGlobe, FaSun, FaMoon,
+  FaDownload, FaMobileAlt // ✅ Iconos PWA agregados
 } from 'react-icons/fa';
-/*<MenuOption
-icon={FaTools}
-iconColor="#6c757d"
-title={t('roles', 'Roles')}
-to="/users/roles"
-/>*/
+
 // Componente MenuOption
-const MenuOption = ({ icon: Icon, iconColor, title, onClick, to, danger }) => {
+const MenuOption = ({ icon: Icon, iconColor, title, onClick, to, danger, badge }) => {
   const history = useHistory();
 
   const handleClick = () => {
@@ -35,7 +31,8 @@ const MenuOption = ({ icon: Icon, iconColor, title, onClick, to, danger }) => {
       style={{
         cursor: 'pointer',
         transition: 'all 0.3s ease',
-        borderRadius: '12px'
+        borderRadius: '12px',
+        position: 'relative'
       }}
       onClick={handleClick}
       onMouseEnter={(e) => {
@@ -65,6 +62,25 @@ const MenuOption = ({ icon: Icon, iconColor, title, onClick, to, danger }) => {
         <span className={`fw-${danger ? 'bold' : '500'}`} style={{ color: danger ? '#dc3545' : 'inherit' }}>
           {title}
         </span>
+        
+        {/* Badge para indicadores */}
+        {badge && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '15px',
+              background: badge.color || '#28a745',
+              color: 'white',
+              borderRadius: '10px',
+              padding: '2px 8px',
+              fontSize: '0.7rem',
+              fontWeight: 'bold'
+            }}
+          >
+            {badge.text}
+          </span>
+        )}
       </Card.Body>
     </Card>
   );
@@ -93,7 +109,7 @@ const Section = ({ title, children, gradient }) => (
   </div>
 );
 
-const profileinfouser = () => {
+const ProfileInfoUser = () => {
   const { auth, theme, cart, notify, settings } = useSelector((state) => state);
   const dispatch = useDispatch();
   const { languageReducer } = useSelector(state => state);
@@ -108,6 +124,15 @@ const profileinfouser = () => {
   const [showFeaturesModal, setShowFeaturesModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
   const [showNotifyDropdown, setShowNotifyDropdown] = useState(false);
+
+  // ✅ Estados para instalación PWA
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [showInstallAlert, setShowInstallAlert] = useState(false);
+  const [installAlertMessage, setInstallAlertMessage] = useState('');
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showInstallButton, setShowInstallButton] = useState(true);
 
   useEffect(() => {
     if (lang && lang !== i18n.language) {
@@ -137,6 +162,101 @@ const profileinfouser = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // ✅ Effect para PWA (mantenemos la funcionalidad)
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      console.log('📱 PWA: beforeinstallprompt event captured');
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+      
+      setTimeout(() => setShowInstallButton(true), 1000);
+    };
+
+    const handleAppInstalled = () => {
+      console.log('✅ PWA: App installed successfully');
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      setIsAppInstalled(true);
+      setShowInstallButton(false);
+      showInstallMessage(
+        t('pwa_install_success') || '¡App instalada correctamente! 🎉', 
+        'success'
+      );
+    };
+
+    const checkIfInstalled = () => {
+      const isInstalled = 
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone ||
+        document.referrer.includes('android-app://');
+      
+      console.log('🔍 PWA: Checking if installed:', isInstalled);
+      setIsAppInstalled(isInstalled);
+      if (isInstalled) {
+        setShowInstallButton(false);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    
+    checkIfInstalled();
+    
+    const interval = setInterval(checkIfInstalled, 30000);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      clearInterval(interval);
+    };
+  }, [t]);
+
+  // ✅ Función para mostrar mensajes
+  const showInstallMessage = (message, variant = 'info') => {
+    setInstallAlertMessage(message);
+    setShowInstallAlert(true);
+    
+    setTimeout(() => {
+      setShowInstallAlert(false);
+    }, 4000);
+  };
+
+  // ✅ Función para instalar PWA
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      showInstallMessage(
+        'Para instalar la app, usa el menú de Chrome y selecciona "Agregar a pantalla de inicio"', 
+        'info'
+      );
+      return;
+    }
+
+    if (isInstalling) return;
+
+    setIsInstalling(true);
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        showInstallMessage('📥 Instalación iniciada...', 'success');
+      } else {
+        showInstallMessage('Instalación cancelada', 'info');
+      }
+      
+      setDeferredPrompt(null);
+      setCanInstall(false);
+      
+    } catch (error) {
+      console.error('PWA: Error during installation:', error);
+      showInstallMessage('Error durante la instalación', 'warning');
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   const openStatusModal = () => dispatch({ type: GLOBALTYPES.STATUS, payload: true });
 
@@ -172,8 +292,36 @@ const profileinfouser = () => {
     }
   };
 
+  // ✅ Definir qué roles pueden agregar posts
+  const canAddPost = userRole === "admin" || userRole === "Super-utilisateur";
+
   return (
     <div>
+      {/* Alert para mensajes */}
+      {showInstallAlert && (
+        <Alert 
+          variant={
+            installAlertMessage.includes('éxito') || 
+            installAlertMessage.includes('correctamente') ? 'success' : 
+            installAlertMessage.includes('Error') ? 'warning' : 'info'
+          }
+          className="mb-0 text-center py-2"
+          style={{
+            position: 'fixed',
+            top: '70px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: '300px',
+            borderRadius: '12px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+            border: 'none'
+          }}
+        >
+          {installAlertMessage}
+        </Alert>
+      )}
+
       <Container className="py-4" style={{
         direction: lang === 'ar' ? 'rtl' : 'ltr',
         textAlign: lang === 'ar' ? 'right' : 'left'
@@ -200,7 +348,6 @@ const profileinfouser = () => {
                       padding: '3px',
                       background: 'white'
                     }} >
-
                     <Link to={`/profile/${auth.user?._id}`}>
                       <img
                         src={auth.user?.avatar}
@@ -212,7 +359,6 @@ const profileinfouser = () => {
                           objectFit: 'cover'
                         }} />
                     </Link>
-
                   </div>
                   <div className="flex-grow-1">
                     <h3 className="text-white mb-2">{auth.user?.username}</h3>
@@ -231,15 +377,47 @@ const profileinfouser = () => {
                     </div>
                   </div>
                 </div>
-
-               
               </Card.Body>
             </Card>
 
             <Row>
               <Col lg={6}>
+                {/* ✅ SECCIÓN PWA - Disponible para todos */}
+                <Section title={t('pwaSection', '📱 Instalar App')}>
+                  {canInstall && showInstallButton && !isAppInstalled && (
+                    <MenuOption
+                      icon={isInstalling ? FaMobileAlt : FaDownload}
+                      iconColor={isInstalling ? "#f59e0b" : "#10b981"}
+                      title={isInstalling ? 'Instalando...' : 'Instalar App'}
+                      onClick={handleInstallPWA}
+                      badge={isInstalling ? { text: '⏳', color: '#f59e0b' } : { text: '✨', color: '#10b981' }}
+                    />
+                  )}
 
-                {(userRole === "admin") && (
+                  {isAppInstalled && (
+                    <MenuOption
+                      icon={FaCheckCircle}
+                      iconColor="#6b7280"
+                      title="App ya instalada"
+                      badge={{ text: '✅', color: '#6b7280' }}
+                    />
+                  )}
+
+                  {!canInstall && !isAppInstalled && (
+                    <MenuOption
+                      icon={FaInfoCircle}
+                      iconColor="#6c757d"
+                      title="Instalar App"
+                      onClick={() => showInstallMessage(
+                        'Para instalar: Usa el menú de Chrome > "Agregar a pantalla de inicio"',
+                        'info'
+                      )}
+                    />
+                  )}
+                </Section>
+
+                {/* ✅ Agregar Post - SOLO para roles autorizados */}
+                {canAddPost && (
                   <Section>
                     <MenuOption
                       icon={FaPlus}
@@ -250,24 +428,37 @@ const profileinfouser = () => {
                   </Section>
                 )}
 
-                {/* Menú Principal */}
-                <Section  >
-
+                {/* Menú Principal - Disponible para todos */}
+                <Section title={t('mainSection', '🌐 Navegación')}>
                   <MenuOption
                     icon={FaInfoCircle}
                     iconColor="#6c757d"
-                    title={t('appInfo', 'Información')}
+                    title={t('appInfo', 'Información de la App')}
                     to="/appinfo2"
                   />
-                 
-
-
-
+                  
+                  {/* ✅ Opciones adicionales que podrías agregar */}
+                  {auth.user && (
+                    <>
+                      <MenuOption
+                        icon={FaUserCircle}
+                        iconColor="#667eea"
+                        title={t('myProfile', 'Mi Perfil')}
+                        to={`/profile/${auth.user._id}`}
+                      />
+                      <MenuOption
+                        icon={FaComments}
+                        iconColor="#28a745"
+                        title={t('messages', 'Mensajes')}
+                        to="/message"
+                      />
+                    </>
+                  )}
                 </Section>
               </Col>
 
               <Col lg={6}>
-                {/* Compartir */}
+                {/* Compartir - Disponible para todos */}
                 <Section>
                   <MenuOption
                     icon={FaShareAlt}
@@ -275,41 +466,9 @@ const profileinfouser = () => {
                     title={t('shareApp', 'Compartir Aplicación')}
                     onClick={() => setShowModal(true)}
                   />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 </Section>
 
-                {/* Panel de Admin */}
+                {/* ✅ Panel de Admin - EXCLUSIVO para admin */}
                 {userRole === "admin" && (
                   <Section
                     title={
@@ -320,36 +479,39 @@ const profileinfouser = () => {
                     }
                     gradient="linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)"
                   >
+                    {/* ✅ Gestión de Roles - SOLO admin */}
                     <MenuOption
                       icon={FaTools}
                       iconColor="#6c757d"
-                      title={t('roles', 'Roles')}
+                      title={t('roles', 'Gestión de Roles')}
                       to="/users/roles"
                     />
 
                     <MenuOption
                       icon={FaCog}
                       iconColor="#6c757d"
-                      title={t('privacySettings', 'Ajustes de privacidad')}
+                      title={t('privacySettings', 'Ajustes de Privacidad')}
                       to="/users/privacidad"
                     />
+                    
                     <MenuOption
                       icon={FaCog}
                       iconColor="#6c757d"
-                      title={t('globalSettings', 'Configuración global')}
+                      title={t('globalSettings', 'Configuración Global')}
                       onClick={() => setShowFeaturesModal(true)}
                     />
 
                     <MenuOption
                       icon={FaEnvelope}
                       iconColor="#17a2b8"
-                      title={t('adminSendEmail', 'Enviar Email')}
+                      title={t('adminSendEmail', 'Enviar Email Masivo')}
                       to="/mails"
                     />
+                    
                     <MenuOption
                       icon={FaUsers}
                       iconColor="#28a745"
-                      title={t('users', 'Usuarios')}
+                      title={t('users', 'Gestión de Usuarios')}
                       to="/users"
                     />
 
@@ -359,49 +521,54 @@ const profileinfouser = () => {
                       title={t('userActions', 'Acciones de Usuario')}
                       to="/usersactionn"
                     />
+                    
                     <MenuOption
                       icon={FaUserSlash}
                       iconColor="#dc3545"
                       title={t('blockedUsersList', 'Usuarios Bloqueados')}
                       to="/listuserbloque"
                     />
+                    
                     <MenuOption
                       icon={FaFlag}
                       iconColor="#ff6b6b"
                       title={t('reportedUsers', 'Usuarios Denunciados')}
                       to="/listausariosdenunciadoss"
                     />
+                    
                     <MenuOption
                       icon={FaBan}
                       iconColor="#6c757d"
                       title={t('blockStatus', 'Estado de Bloqueos')}
                       to="/bloqueos"
                     />
+                    
                     <MenuOption
                       icon={FaShoppingCart}
                       iconColor="#28a745"
-                      title={t('orders', 'Órdenes')}
+                      title={t('orders', 'Gestión de Órdenes')}
                       to="/cart/orderss"
                     />
                   </Section>
                 )}
 
-                {/* Cerrar Sesión */}
-                <Section>
-                  <MenuOption
-                    icon={FaSignOutAlt}
-                    iconColor="#dc3545"
-                    title={t('logout', 'Cerrar Sesión')}
-                    onClick={handleLogout}
-                    danger
-                  />
-                </Section>
+                {/* Cerrar Sesión - Disponible para todos los usuarios autenticados */}
+                {auth.user && (
+                  <Section>
+                    <MenuOption
+                      icon={FaSignOutAlt}
+                      iconColor="#dc3545"
+                      title={t('logout', 'Cerrar Sesión')}
+                      onClick={handleLogout}
+                      danger
+                    />
+                  </Section>
+                )}
               </Col>
             </Row>
           </Col>
         </Row>
       </Container>
-
 
       {/* Modal de Compartir */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
@@ -415,12 +582,12 @@ const profileinfouser = () => {
               if (navigator.share) {
                 navigator.share({
                   title: 'DJAMEL APS',
-                  text: t('shareAppText', '¡Mira esta increíble aplicación de arte!'),
+                  text: '¡Mira esta increíble aplicación!',
                   url: window.location.origin,
                 });
               } else {
                 navigator.clipboard.writeText(window.location.origin);
-                alert(t('linkCopied', 'Enlace copiado al portapapeles'));
+                alert('Enlace copiado al portapapeles');
               }
               setShowModal(false);
             }}>
@@ -452,4 +619,4 @@ const profileinfouser = () => {
   );
 };
 
-export default profileinfouser;
+export default ProfileInfoUser;
