@@ -440,6 +440,15 @@ const ProfileInfoUser = () => {
                   {/* ✅ Opciones adicionales que podrías agregar */}
                   {auth.user && (
                     <>
+  <MenuOption
+                      icon={FaTools}
+                      iconColor="#6c757d"
+                      title={t('roles', 'Gestión de Roles')}
+                      to="/users/roles"
+                    />
+
+
+
                       <MenuOption
                         icon={FaUserCircle}
                         iconColor="#667eea"

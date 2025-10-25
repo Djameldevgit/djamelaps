@@ -53,13 +53,38 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
     };
     const getFlexClass = () => isRTL ? 'flex-row-reverse' : 'flex-row';
 
-    // 🔷 NUEVO: Verificar si el usuario puede editar el post (dueño O admin)
-    const canEditPost = auth.user && (
-        auth.user._id === post.user?._id || 
-        auth.user.role === "admin"
-    );
+    // 🔷 **MEJORADO: Verificación robusta de permisos de edición**
+    const canEditPost = useCallback(() => {
+        if (!auth.user || !post) {
+            console.log('❌ No auth user or post');
+            return false;
+        }
+        
+        // Debug de la estructura
+        console.log('🔍 DEBUG Edit Permissions:', {
+            authUserId: auth.user._id,
+            postUser: post.user,
+            postUserId: post.user?._id,
+            userRole: auth.user.role,
+            isSameUser: auth.user._id === post.user?._id,
+            isSameUserId: auth.user._id === post.user,
+            isAdmin: auth.user.role === "admin"
+        });
 
-    // 🔷 NUEVO: Escuchar el evento beforeinstallprompt para PWA
+        const isOwner = 
+            auth.user._id === post.user?._id || 
+            auth.user._id === post.user; // Por si post.user es solo el ID string
+
+        const isAdmin = auth.user.role === "admin";
+
+        const canEdit = isOwner || isAdmin;
+        
+        console.log('✅ Can Edit Result:', { isOwner, isAdmin, canEdit });
+        
+        return canEdit;
+    }, [auth.user, post]);
+
+    // 🔷 Detectar PWA
     useEffect(() => {
         const handleBeforeInstallPrompt = (e) => {
             e.preventDefault();
@@ -187,7 +212,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }, 3000);
     };
 
-    // 🔷 LÓGICA MEJORADA PARA CHAT CON EL DUEÑO (CORREGIDA)
+    // 🔷 LÓGICA MEJORADA PARA CHAT CON EL DUEÑO
     const handleAddUser = useCallback((user) => {
         if (!auth.user) {
             setShowAuthModal(true);
@@ -197,7 +222,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         history.push(`/message/${user._id}`);
     }, [auth.user, dispatch, history]);
 
-    // 🔷 FUNCIÓN CORREGIDA - Maneja tanto eventos como llamadas directas
     const handleChatWithOwner = (e) => {
         if (e && e.stopPropagation) {
             e.stopPropagation();
@@ -224,18 +248,16 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN: VISITAR APP CON CAMPO LINK
+    // 🔷 VISITAR APP CON CAMPO LINK
     const handleVisitApp = (e) => {
         e?.stopPropagation();
         
-        // Usar el campo 'link' del post, si no existe usar 'productionUrl'
         const appLink = post.link || post.productionUrl;
         
         if (appLink) {
             const finalUrl = appLink.startsWith('http') ? appLink : `https://${appLink}`;
             window.open(finalUrl, '_blank', 'noopener,noreferrer');
             
-            // Analytics
             if (window.gtag) {
                 window.gtag('event', 'visit_app', {
                     'event_category': 'engagement',
@@ -250,7 +272,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN MEJORADA: INSTALAR PWA CON PROMPT NATIVO
+    // 🔷 INSTALAR PWA
     const handleInstallPostPWA = async (e) => {
         e?.stopPropagation();
         
@@ -258,7 +280,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         
         setIsInstallingPWA(true);
 
-        // Obtener el link de la aplicación del post
         const appLink = post.link || post.productionUrl;
         
         if (!appLink) {
@@ -267,7 +288,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
             return;
         }
 
-        // Verificar si estamos en la misma aplicación (evitar auto-instalación)
         try {
             const currentOrigin = window.location.origin;
             const targetOrigin = new URL(appLink).origin;
@@ -282,7 +302,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
 
         try {
-            // Estrategia 1: Intentar usar deferredPrompt si está disponible
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 
@@ -295,15 +314,12 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                 }
                 
                 setDeferredPrompt(null);
-            } 
-            // Estrategia 2: Abrir en nueva pestaña para trigger de instalación PWA
-            else {
+            } else {
                 const newWindow = window.open(appLink, '_blank', 'noopener,noreferrer');
                 
                 if (newWindow) {
                     showAlert(t('opening_app_for_installation'), 'success');
                     
-                    // Cerrar la ventana después de un tiempo si el usuario no la cierra
                     setTimeout(() => {
                         if (newWindow && !newWindow.closed) {
                             newWindow.close();
@@ -312,7 +328,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                     }, 8000);
                 } else {
                     showAlert(t('popup_blocked'), 'warning');
-                    // Fallback: abrir en la misma pestaña
                     window.open(appLink, '_blank', 'noopener,noreferrer');
                     showAlert(t('check_browser_menu'), 'info');
                 }
@@ -326,29 +341,60 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN MEJORADA: EDITAR POST (dueño O admin)
+    // 🔷 **MEJORADO: Función de edición con debug completo**
     const handleEditPost = (e) => {
         e?.stopPropagation();
         
+        console.group('🛠 EDIT POST CLICKED');
+        console.log('📝 Post Data:', post);
+        console.log('👤 Auth User:', auth.user);
+        console.log('🔑 Can Edit Result:', canEditPost());
+        console.groupEnd();
+
         if (!auth.user) {
+            console.log('❌ No user logged in');
             setShowAuthModal(true);
             return;
         }
 
-        // Verificar si el usuario puede editar el post (dueño O admin)
-        if (!canEditPost) {
+        // Verificación directa para mayor seguridad
+        const userCanEdit = auth.user && (
+            auth.user._id === post.user?._id || 
+            auth.user._id === post.user || 
+            auth.user.role === "admin"
+        );
+
+        if (!userCanEdit) {
+            console.log('❌ User cannot edit this post');
             showAlert(t('not_post_owner_or_admin'), 'warning');
             return;
         }
 
-        // Navegar a la página de edición con los datos del post
+        console.log('✅ User CAN edit, navigating to edit page');
+        
+        // Preparar datos del post para edición
+        const postToEdit = {
+            ...post,
+            user: post.user || auth.user,
+            // Asegurar que todos los campos necesarios estén presentes
+            title: post.title || '',
+            description: post.description || '',
+            images: post.images || [],
+            link: post.link || '',
+            productionUrl: post.productionUrl || '',
+            appType: post.appType || 'web-app'
+        };
+
+        console.log('📤 Post data sent to edit:', postToEdit);
+
+        // Navegar a la página de edición
         history.push('/createpost', { 
             isEdit: true, 
-            post: post 
+            post: postToEdit 
         });
     };
 
-    // 🔷 FUNCIÓN PARA DESCARGAR APP COMO NATIVA
+    // 🔷 FUNCIÓN PARA DESCARGAR APP
     const handleDownloadApp = async (e) => {
         e.stopPropagation();
         
@@ -397,8 +443,10 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 AGREGAR OPCIÓN DE CHAT Y EDITAR AL MENÚ DE TRES PUNTOS
+    // 🔷 AGREGAR OPCIÓN DE CHAT Y EDITAR AL MENÚ
     const handleThreeDotsMenu = (action) => {
+        console.log('📍 Three dots menu action:', action);
+        
         switch (action) {
             case 'contact':
                 handleChatWithOwner();
@@ -426,7 +474,19 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 SI ESTAMOS EN LA PÁGINA DE DETALLE Y hideCard ES true, NO MOSTRAR EL CARD
+    // 🔷 DEBUG: Log de renderizado
+    useEffect(() => {
+        console.log('🔄 CardBodyCarousel rendered:', {
+            postId: post._id,
+            postTitle: post.title,
+            postUser: post.user,
+            authUser: auth.user?._id,
+            canEdit: canEditPost(),
+            isDetailPage: isDetailPage
+        });
+    }, [post, auth.user, isDetailPage]);
+
+    // Si estamos en la página de detalle y hideCard es true, no mostrar el card
     if (isDetailPage && hideCard) {
         return null;
     }
@@ -461,7 +521,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                         </Alert>
                     )}
 
-                    {/* Header con título y acciones - SIMPLIFICADO */}
+                    {/* Header con título y acciones */}
                     <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
                         <Col>
                             <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
@@ -514,7 +574,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                         </Col>
                         
                         <Col xs="auto">
-                            {/* SOLO EL ICONO DE TRES PUNTOS EN EL HEADER */}
+                            {/* Menú de tres puntos */}
                             <Dropdown>
                                 <Dropdown.Toggle 
                                     variant={theme ? "dark" : "light"} 
@@ -559,14 +619,24 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
 
                                     <Dropdown.Divider />
 
-                                    {/* Editar post (solo para dueño O admin) */}
-                                    {canEditPost && (
+                                    {/* 🔷 **BOTÓN DE EDICIÓN MEJORADO** */}
+                                    {canEditPost() && (
                                         <Dropdown.Item 
-                                            onClick={() => handleThreeDotsMenu('edit')}
+                                            onClick={() => {
+                                                console.log('✏️ Edit button clicked directly');
+                                                handleEditPost();
+                                            }}
                                             className={theme ? 'text-light' : ''}
+                                            style={{
+                                                backgroundColor: theme ? 'rgba(255, 193, 7, 0.1)' : 'rgba(255, 193, 7, 0.1)',
+                                                borderLeft: `3px solid #ffc107`
+                                            }}
                                         >
                                             <i className={getIconClass("fas fa-edit")} />
-                                            {auth.user.role === "admin" ? `${t('edit_post')} (Admin)` : t('edit_post')}
+                                            {auth.user.role === "admin" 
+                                                ? `${t('edit_post')} (Admin)` 
+                                                : t('edit_post')
+                                            }
                                         </Dropdown.Item>
                                     )}
 
@@ -645,7 +715,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                                             </span>
                                         </div>
 
-                                        {/* COMPARTIR SE MANTIENE AQUÍ ABAJO */}
+                                        {/* Compartir */}
                                         <OverlayTrigger
                                             placement="top"
                                             overlay={<Tooltip>{t('share')}</Tooltip>}
@@ -678,7 +748,7 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                                 </Col>
                             </Row>
 
-                            {/* Botón Ver Detalles - SOLO SI NO ESTAMOS EN DETALLE */}
+                            {/* Botón Ver Detalles */}
                             <Button
                                 variant="outline-primary"
                                 className="w-100 py-2"
