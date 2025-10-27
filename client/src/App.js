@@ -39,8 +39,9 @@ import infoaplicacionn from './pages/infoaplicacionn';
 import bloginfo from './pages/bloginfo';
 import InfoAplicacion from './components/blogInfoComment/InfoAplicacion';
 import Bloqueos404 from './components/adminitration/Bloqueos404';
-import CreatePost from './pages/createpost';
+ 
 import appinfo2 from './pages/appinfo2';
+import Createpost from './pages/createpost';
 
 
 
@@ -153,9 +154,8 @@ function App() {
   <Route exact path="/infoAplicacionn" component={appinfo2} />
   <Route exact path="/appinfo2" component={appinfo2} />
   
-        <Route path="/edit-post/:id" element={<CreatePost />} />
-
-  <Route path="/create-post" element={<CreatePost />} />
+  
+<Route path="/editpost/:id" element={<Createpost />} />
   <Route exact path="/bloqueos404" component={Bloqueos404} />
   <Route exact path="/video/:obraId" component={video} />
   <Route exact path="/forgot_password" component={ForgotPassword} />

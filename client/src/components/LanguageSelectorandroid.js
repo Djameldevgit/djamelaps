@@ -42,8 +42,7 @@ const LanguageSelectorandroid = () => {
     fr: t('language.fr', { lng: lang }),
     ar: t('language.ar', { lng: lang }),
    
-    kab: t('language.kab', { lng: lang }),
- 
+  
   };
 
   return (
@@ -71,7 +70,7 @@ const LanguageSelectorandroid = () => {
                 color: '#333',
                 lineHeight: '1.2'
               }}>
-                {t('Tassili', { lng: lang })}
+                {t('appName', { lng: lang })}
               </h3>
             </a>
           </Col>
@@ -103,7 +102,7 @@ const LanguageSelectorandroid = () => {
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu style={{ minWidth: '140px' }}>
-                  {['ar', 'fr',   'kab' ].map((langCode) => (
+                  {['ar', 'fr'].map((langCode) => (
                     <Dropdown.Item 
                       key={langCode} 
                       onClick={() => handleLanguageChange(langCode)}

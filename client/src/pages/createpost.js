@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useHistory, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Container, 
   Row, 
@@ -10,610 +10,1401 @@ import {
   Form, 
   Button, 
   Alert,
-  Badge,
-  InputGroup
-} from 'react-bootstrap'
-import { GLOBALTYPES } from '../redux/actions/globalTypes'
-import { createPost, updatePost } from '../redux/actions/postAction'
-import { imageShow } from '../utils/mediaShow'
+  Accordion
+} from 'react-bootstrap';
 
-const CreatePost = () => {
-    const { auth, theme, status, socket } = useSelector(state => state)
-    const dispatch = useDispatch()
-    const history = useHistory()
-    const location = useLocation()
-    const { t } = useTranslation('createpost')
+// Importar todos los componentes modulares
+import CategorySelector from '../components/forms/CategorySelector';
+import TitleInput from '../components/forms/TitleInput';
+import DescriptionTextarea from '../components/forms/DescriptionTextarea';
+import AddressInput from '../components/forms/AddressInput';
+import Horariodesalida from '../components/forms/Horariodesalida';
+import DurationInput from '../components/forms/DurationInput';
+import TransportSelect from '../components/forms/TransportSelect';
+import DestinationManager from '../components/forms/DestinationManager';
+import PensionSelect from '../components/forms/PensionSelect';
+import ReturnDateInput from '../components/forms/ReturnDateInput';
+import PriceSlider from '../components/forms/PriceSlider';
+import CancellationPolicy from '../components/forms/CancellationPolicy';
+import ContactReservation from '../components/forms/ContactReservation';
+import ImageUpload from '../components/forms/ImageUpload';
 
-    // Estados iniciales con el nuevo campo link
-    const [content, setContent] = useState('')
-    const [images, setImages] = useState([])
-    const [title, setTitle] = useState('')
-    const [price, setPrice] = useState('')
-    const [priceType, setPriceType] = useState('')
-    const [offerType, setOfferType] = useState('')
-    const [features, setFeatures] = useState([])
-    const [link, setLink] = useState('') // Nuevo campo
-    
-    // Opciones para tipos de aplicaciones/proyectos
-    const apptitleOptions = [
-        { value: '', label: t('select_app_type') },
-        
-        // Marketplaces y E-commerce
-        { value: 'marketplace', label: t('app_marketplace') },
-        { value: 'ecommerce', label: t('app_ecommerce') },
-        { value: 'tienda-online', label: t('app_tienda_online') },
-        { value: 'venta-productos', label: t('app_venta_productos') },
-        { value: 'subastas', label: t('app_subastas') },
-        
-        // Redes Sociales
-        { value: 'red-social', label: t('app_red_social') },
-        { value: 'comunidad', label: t('app_comunidad') },
-        { value: 'foro', label: t('app_foro') },
-        { value: 'blog', label: t('app_blog') },
-        { value: 'chat-grupal', label: t('app_chat_grupal') },
-        
-        // Aplicaciones Web
-        { value: 'web-app', label: t('app_web_app') },
-        { value: 'site-web', label: t('app_site_web') },
-        { value: 'pagina-web', label: t('app_pagina_web') },
-        { value: 'portal-web', label: t('app_portal_web') },
-        
-        // Aplicaciones Móviles
-        { value: 'android-app', label: t('app_android_app') },
-        { value: 'ios-app', label: t('app_ios_app') },
-        { value: 'mobile-app', label: t('app_mobile_app') },
-        { value: 'hibrida-app', label: t('app_hibrida_app') },
-        
-        // Servicios y Plataformas
-        { value: 'servicio-online', label: t('app_servicio_online') },
-        { value: 'plataforma-educativa', label: t('app_plataforma_educativa') },
-        { value: 'sistema-gestion', label: t('app_sistema_gestion') },
-        { value: 'crm', label: t('app_crm') },
-        { value: 'cms', label: t('app_cms') },
-        
-        // Entretenimiento
-        { value: 'juego-online', label: t('app_juego_online') },
-        { value: 'streaming', label: t('app_streaming') },
-        { value: 'musica', label: t('app_musica') },
-        { value: 'video', label: t('app_video') },
-        
-        // Utilidades
-        { value: 'herramienta-productividad', label: t('app_herramienta_productividad') },
-        { value: 'app-finanzas', label: t('app_finanzas') },
-        { value: 'salud-fitness', label: t('app_salud_fitness') },
-        { value: 'viajes', label: t('app_viajes') },
-        
-        // Otros
-        { value: 'otro', label: t('app_otro') }
-    ]
+// Importar acciones y tipos
+import { createPost, updatePost } from '../redux/actions/postAction';
+import communesjson from "../json/communes.json";
 
-    // Opciones corregidas para tipo de oferta
-    const offerTypeOptions = [
-        { value: '', label: t('select_offer_type') },
-        { value: 'fixed', label: t('fixed_price') },
-        { value: 'negotiable', label: t('negotiable_price') },
-        { value: 'on_sale', label: t('on_sale') },
-        { value: 'free', label: t('free') },
-        { value: 'exchange', label: t('exchange') }
-    ]
+const Createpost = () => {
+    const { auth, theme, socket, languageReducer } = useSelector((state) => state);
+    const dispatch = useDispatch();
+    const history = useHistory();
+    const location = useLocation();
+    const { t, i18n } = useTranslation('createpost');
 
-    // Opciones para tipo de precio/unidad
-    const priceTypeOptions = [
-        { value: '', label: t('select_currency') },
-        { value: 'DINAR-argelia', label: t('dinar_argelia') },
-        { value: 'CIENTIME', label: t('centime_argelia') },
-        { value: 'EURO', label: t('euro') },
-        { value: 'DOLAR', label: t('dolar') },
-        { value: 'LIBRA-esterlina', label: t('libra_esterlina') },
-        { value: 'YEN', label: t('yen') },
-        { value: 'FRANCO-suizo', label: t('franco_suizo') },
-        { value: 'DINAR-tunecino', label: t('dinar_tunecino') },
-        { value: 'DIRHAM-marroqui', label: t('dirham_marroqui') },
-        { value: 'RIAL-saudi', label: t('rial_saudi') }
-    ]
+    // 🔷 OBTENER DATOS DE EDICIÓN DESDE location.state
+    const isEdit = location.state?.isEdit || false;
+    const postToEdit = location.state?.postData || null;
 
-    const featuresOptions = [
-        // Categoría: Interacción y Social
-        { value: 'sistema-de-comments', label: t('feature_comments') },
-        { value: 'likes-en-tiempo-real', label: t('feature_likes') },
-        { value: 'save', label: t('feature_save') },
-        { value: 'follow', label: t('feature_follow') },
+    // Estado inicial
+    const initialState = {
+        category: "Agence de Voyage",
+        subCategory: "",
+        title: "",
+        description: "",
+        price: "",
+        wilaya: "",
+        commune: "",
+        contacto: "",
+        itemsReservations_Visa: "",
+        Location_Vacances: '',
+        alquilergeneral: "",
+        superficie: "",
+        etage: "",
+        promoteurimmobilier: false,
+        specifications: [],
+        adress: "",
+        nombredelhotel: "",
+        adresshotel: "",
+        totalhabitaciones: "",
+        tipodehabutaciones: [],
+        estrellas: "",
+        wifi: [],
+        language: [],
+        tarifnuit: "",
+        reservacionenlinea: "",
+        politiqueAnnulation: "",
+        hotelWebsite: "",
+        horariollegada: "",
+        horadudepar: "",
+        datedepar: "",
+        duracionviaje: "",
+        transporte: "",
+        destinacionvoyage1: "",
+        voyage1hotel1: "",
+        voyage1nombrehotel1: "",
+        destinacionvoyage2: "",
+        voyage2hotel2: "",
+        voyage1nombrehotel2: "",
+        fecharegreso: "",
+        serviciosdelhotel: "",
+        incluidoenelprecio: "",
+        cancelarreserva: "",
+        destinacionhadj: "",
+        // Nuevos campos para mejor experiencia
+        typeVoyage: "",
+        niveauConfort: "",
+        servicesInclus: [],
+        activites: [],
+        publicCible: "",
+        animauxAcceptes: false,
+        parking: false,
+        piscine: false,
+        climatisation: false,
+        cuisineEquipee: false,
+        wifiGratuit: false,
+        television: false,
+        menageInclus: false,
+        capacitePersonnes: "",
+        nombreChambres: "",
+        nombreSallesBain: "",
+        checkInTime: "",
+        checkOutTime: "",
+        conditionsAnnulation: "",
+        documentsRequises: [],
+        delaiTraitement: "",
+        paysDestination: "",
+        typeVisa: "",
+        dureeValidite: "",
+        formalites: "",
+        assurancesIncluses: false,
+        guideLocal: false,
+        repasInclus: false,
+        transfertAeroport: false,
+        excursions: [],
+        prixAdulte: "",
+        prixEnfant: "",
+        prixBebe: "",
+        optionsPaiement: [],
+        acompteRequise: false,
+        pourcentageAcompte: "",
+    };
 
-        // Categoría: Comunicación en Tiempo Real
-        { value: 'live-chat-profesional', label: t('feature_live_chat') },
-        { value: 'notifications-en-tiempo-real', label: t('feature_notifications') },
+    // Estados
+    const [postData, setPostData] = useState(initialState);
+    const [images, setImages] = useState([]);
+    const [selectedWilaya, setSelectedWilaya] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertVariant, setAlertVariant] = useState("info");
+    const [activeAccordion, setActiveAccordion] = useState(['0']);
 
-        // Categoría: Autenticación y Seguridad
-        { value: 'registro-con-google-login', label: t('feature_google_login') },
-        { value: 'registro-con-facebook-login', label: t('feature_facebook_login') },
-        { value: 'authentication', label: t('feature_authentication') },
-        { value: 'authorization', label: t('feature_authorization') },
-        { value: 'email-verification', label: t('feature_email_verification') },
-        { value: 'activacion', label: t('feature_activation') },
-        { value: 'incriptacion-de-datos', label: t('feature_encryption') },
-        { value: 'blocking', label: t('feature_blocking') },
+    // 🔷 EFFECT PARA CAMBIO DE IDIOMA
+    useEffect(() => {
+        const lang = languageReducer?.language || 'fr';
+        if (i18n.language !== lang) {
+            i18n.changeLanguage(lang);
+        }
+    }, [languageReducer?.language, i18n]);
 
-        // Categoría: Sistema y Administración
-        { value: 'admin-panel', label: t('feature_admin_panel') },
-        { value: 'user-tracking', label: t('feature_user_tracking') },
-        { value: 'post-validation', label: t('feature_post_validation') },
-        { value: 'user-posts', label: t('feature_user_posts') },
-
-        // Categoría: Tecnología y Infraestructura
-        { value: 'database-propia-independiente', label: t('feature_database') },
-        { value: 'modern-css', label: t('feature_modern_css') },
-        { value: 'sistema-propio-multiples-lenguajes', label: t('feature_multilingual') },
-        { value: 'envios-de-email-system', label: t('feature_email_system') }
-    ]
-
-    const isEdit = location.state?.isEdit || status.onEdit
-    const postToEdit = location.state?.post || status
-
+    // 🔷 EFFECT PARA CARGAR DATOS DE EDICIÓN
     useEffect(() => {
         if (isEdit && postToEdit) {
-            setContent(postToEdit.content || '')
-            setImages(postToEdit.images || [])
-            setTitle(postToEdit.title || '')
-            setPrice(postToEdit.price || '')
-            setPriceType(postToEdit.priceType || '')
-            setOfferType(postToEdit.offerType || '')
-            setFeatures(postToEdit.features || [])
-            setLink(postToEdit.link || '') // Cargar link si existe
-        }
-    }, [isEdit, postToEdit])
+            setPostData({
+                ...initialState,
+                ...postToEdit,
+                category: postToEdit.category || "Agence de Voyage",
+                subCategory: postToEdit.subCategory || "",
+                description: postToEdit.description || postToEdit.content || "",
+                title: postToEdit.title || "",
+            });
 
-    const handleChangeImages = e => {
-        const files = [...e.target.files]
-        let err = ""
-        let newImages = []
+            if (postToEdit.images && postToEdit.images.length > 0) {
+                setImages(postToEdit.images.map(img => ({
+                    url: typeof img === 'string' ? img : img.url,
+                    file: null
+                })));
+            } else {
+                setImages([]);
+            }
+
+            setSelectedWilaya(postToEdit.wilaya || "");
+        } else {
+            setPostData(initialState);
+            setImages([]);
+            setSelectedWilaya("");
+        }
+    }, [isEdit, postToEdit]);
+
+    // Handlers para el formulario
+    const handleChangeInput = (e) => {
+        const { name, value, type, checked } = e.target;
+        setPostData(prevState => ({
+            ...prevState,
+            [name]: type === "checkbox" ? checked : value
+        }));
+    };
+
+    // Handler para arrays (servicios, activites, etc.)
+    const handleArrayChange = (field, value, isChecked) => {
+        setPostData(prevState => {
+            const currentArray = prevState[field] || [];
+            let newArray;
+            
+            if (isChecked) {
+                newArray = [...currentArray, value];
+            } else {
+                newArray = currentArray.filter(item => item !== value);
+            }
+            
+            return {
+                ...prevState,
+                [field]: newArray
+            };
+        });
+    };
+
+    const handleWilayaChange = (event) => {
+        const selectedWilaya = event.target.value;
+        setSelectedWilaya(selectedWilaya);
+        const wilayaEncontrada = communesjson.find((wilaya) => wilaya.wilaya === selectedWilaya);
+        const communes = wilayaEncontrada ? wilayaEncontrada.commune : [];
+        
+        setPostData((prevState) => ({
+            ...prevState,
+            wilaya: selectedWilaya,
+            commune: communes.length > 0 ? communes[0] : "",
+        }));
+    };
+
+    const handleCommuneChange = (event) => {
+        const selectedCommune = event.target.value;
+        setPostData((prevState) => ({
+            ...prevState,
+            commune: selectedCommune,
+        }));
+    };
+
+    // Handler para manejar imágenes
+    const handleChangeImages = (e) => {
+        const files = [...e.target.files];
+        let err = "";
+        let newImages = [];
 
         files.forEach(file => {
-            if (!file) return err = t('file_not_exist')
+            if (!file) return err = t('validation_images_required');
             if (file.size > 1024 * 1024 * 5) {
-                return err = t('image_too_large')
+                return err = "La taille de l'image/vidéo ne doit pas dépasser 5mb.";
             }
-            return newImages.push(file)
-        })
+            return newImages.push(file);
+        });
 
-        if (err) dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err } })
-        setImages([...images, ...newImages])
-    }
-
-    const deleteImages = (index) => {
-        const newArr = [...images]
-        newArr.splice(index, 1)
-        setImages(newArr)
-    }
-
-    // Manejar cambios en los checkboxes de features
-    const handleFeatureChange = (e) => {
-        const { value, checked } = e.target
-
-        if (checked) {
-            setFeatures([...features, value])
-        } else {
-            setFeatures(features.filter(feature => feature !== value))
+        if (err) {
+            setAlertMessage(err);
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
         }
-    }
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
+        setImages([...images, ...newImages]);
+    };
+
+    // Handler para eliminar imágenes
+    const deleteImages = (index) => {
+        const newArr = [...images];
+        newArr.splice(index, 1);
+        setImages(newArr);
+    };
+
+    // 🔷 HANDLER SUBMIT MEJORADO
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Validaciones
+        if (!postData.subCategory) {
+            setAlertMessage(t('validation_category_required'));
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
+
+        if (!postData.wilaya || !postData.commune) {
+            setAlertMessage(t('validation_wilaya_required'));
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
 
         if (images.length === 0) {
-            return dispatch({
-                type: GLOBALTYPES.ALERT,
-                payload: { error: t('validation_no_images') }
-            })
+            setAlertMessage(t('validation_images_required'));
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
         }
 
-        // Validación adicional para los nuevos campos
-        if (!title) {
-            return dispatch({
-                type: GLOBALTYPES.ALERT,
-                payload: { error: t('validation_no_app_type') }
-            })
-        }
-
-        const postData = {
-            content,
-            images,
-            title,
-            price,
-            priceType,
-            offerType,
-            features,
-            link, // Incluir el link en los datos
-            auth
-        }
-
-        if (isEdit && postToEdit) {
-            dispatch(updatePost({
-                ...postData,
-                status: { ...postToEdit, onEdit: true }
-            }))
-        } else {
-            dispatch(createPost({
-                ...postData,
-                socket
-            }))
-        }
-
-        // Resetear todos los campos
-        setContent('')
-        setImages([])
-        setTitle('')
-        setPrice('')
-        setPriceType('')
-        setOfferType('')
-        setFeatures([])
-        setLink('') // Resetear link
-    
-        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
-        history.push('/')
-    }
-
-    const handleCancel = () => {
-        dispatch({ type: GLOBALTYPES.STATUS, payload: false })
-        history.goBack()
-    }
-
-    // Función para validar URL
-    const isValidUrl = (string) => {
         try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
+            if (isEdit && postToEdit) {
+                const status = {
+                    _id: postToEdit._id,
+                    ...postToEdit
+                };
+
+                await dispatch(updatePost({ 
+                    postData, 
+                    images, 
+                    auth, 
+                    status 
+                }));
+
+                setAlertMessage(t('success_update'));
+                setAlertVariant("success");
+            } else {
+                await dispatch(createPost({ 
+                    postData, 
+                    images, 
+                    auth, 
+                    socket 
+                }));
+
+                setAlertMessage(t('success_create'));
+                setAlertVariant("success");
+            }
+
+            setShowAlert(true);
+
+            setTimeout(() => {
+                history.push('/');
+            }, 2000);
+
+        } catch (error) {
+            setAlertMessage(t('error_publication'));
+            setAlertVariant("danger");
+            setShowAlert(true);
         }
-    }
+    };
+
+    // 🔷 HANDLER CANCELAR
+    const handleCancel = () => {
+        history.goBack();
+    };
+
+    // Opciones para wilayas y communes
+    const wilayasOptions = communesjson.map((wilaya, index) => (
+        <option key={index} value={wilaya.wilaya}>
+            {wilaya.wilaya}
+        </option>
+    ));
+
+    const communesOptions = selectedWilaya
+        ? communesjson
+            .find((wilaya) => wilaya.wilaya === selectedWilaya)
+            ?.commune?.map((commune, index) => (
+                <option key={index} value={commune}>
+                    {commune}
+                </option>
+            ))
+        : [];
+
+    // 🔷 COMPONENTES DINÁMICOS SEGÚN SUBCATEGORÍA
+    const renderVoyageOrganiseFields = () => (
+        <>
+            <Accordion activeKey={activeAccordion} onSelect={setActiveAccordion} className="mb-3">
+                {/* Informations Générales */}
+                <Accordion.Item eventKey="0">
+                    <Accordion.Header>
+                        <i className="fas fa-info-circle me-2 text-primary"></i>
+                        {t('informations_generales')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('type_voyage')}</Form.Label>
+                                    <Form.Select 
+                                        name="typeVoyage"
+                                        value={postData.typeVoyage}
+                                        onChange={handleChangeInput}
+                                    >
+                                        <option value="">{t('select_type')}</option>
+                                        <option value="culturel">{t('type_culturel')}</option>
+                                        <option value="aventure">{t('type_aventure')}</option>
+                                        <option value="detente">{t('type_detente')}</option>
+                                        <option value="religieux">{t('type_religieux')}</option>
+                                        <option value="affaires">{t('type_affaires')}</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('niveau_confort')}</Form.Label>
+                                    <Form.Select 
+                                        name="niveauConfort"
+                                        value={postData.niveauConfort}
+                                        onChange={handleChangeInput}
+                                    >
+                                        <option value="">{t('select_confort')}</option>
+                                        <option value="economique">{t('comfort_economique')}</option>
+                                        <option value="standard">{t('comfort_standard')}</option>
+                                        <option value="confort">{t('comfort_confort')}</option>
+                                        <option value="luxe">{t('comfort_luxe')}</option>
+                                        <option value="premium">{t('comfort_premium')}</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('public_cible')}</Form.Label>
+                            <Form.Select 
+                                name="publicCible"
+                                value={postData.publicCible}
+                                onChange={handleChangeInput}
+                            >
+                                <option value="">{t('select_public')}</option>
+                                <option value="familles">{t('public_familles')}</option>
+                                <option value="couples">{t('public_couples')}</option>
+                                <option value="seniors">{t('public_seniors')}</option>
+                                <option value="jeunes">{t('public_jeunes')}</option>
+                                <option value="groupes">{t('public_groupes')}</option>
+                                <option value="tous">{t('public_tous')}</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Dates et Durée */}
+                <Accordion.Item eventKey="1">
+                    <Accordion.Header>
+                        <i className="fas fa-calendar-alt me-2 text-success"></i>
+                        {t('dates_duree')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Horariodesalida postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <DurationInput postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <ReturnDateInput postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Transport et Destinations */}
+                <Accordion.Item eventKey="2">
+                    <Accordion.Header>
+                        <i className="fas fa-plane me-2 text-info"></i>
+                        {t('transport_destinations')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <TransportSelect postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <DestinationManager postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Hébergement et Pension */}
+                <Accordion.Item eventKey="3">
+                    <Accordion.Header>
+                        <i className="fas fa-hotel me-2 text-warning"></i>
+                        {t('hebergement_pension')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <PensionSelect postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('services_hotel_inclus')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['wifi', 'piscine', 'spa', 'restaurant', 'gym', 'room_service'].map(service => (
+                                    <Form.Check
+                                        key={service}
+                                        type="checkbox"
+                                        label={t(`service_${service}`)}
+                                        checked={postData.servicesInclus?.includes(service) || false}
+                                        onChange={(e) => handleArrayChange('servicesInclus', service, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Activités et Excursions */}
+                <Accordion.Item eventKey="4">
+                    <Accordion.Header>
+                        <i className="fas fa-hiking me-2 text-primary"></i>
+                        {t('activites_excursions')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Form.Group>
+                            <Form.Label>{t('activites_incluses')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['visite_guidee', 'randonnee', 'plongee', 'shopping', 'degustation', 'spectacle'].map(activite => (
+                                    <Form.Check
+                                        key={activite}
+                                        type="checkbox"
+                                        label={t(`activite_${activite}`)}
+                                        checked={postData.activites?.includes(activite) || false}
+                                        onChange={(e) => handleArrayChange('activites', activite, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Prix et Conditions */}
+                <Accordion.Item eventKey="5">
+                    <Accordion.Header>
+                        <i className="fas fa-euro-sign me-2 text-success"></i>
+                        {t('prix_conditions')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <PriceSlider postData={postData} setPostData={setPostData} t={t} />
+                        
+                        <Row className="g-3 mt-3">
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_adulte')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixAdulte"
+                                        value={postData.prixAdulte}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_adulte')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_enfant')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixEnfant"
+                                        value={postData.prixEnfant}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_enfant')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_bebe')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixBebe"
+                                        value={postData.prixBebe}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_bebe')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <CancellationPolicy postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Services Inclus */}
+                <Accordion.Item eventKey="6">
+                    <Accordion.Header>
+                        <i className="fas fa-check-circle me-2 text-info"></i>
+                        {t('services_inclus')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <div className="row g-3">
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="assurancesIncluses"
+                                    label={t('assurances_incluses')}
+                                    checked={postData.assurancesIncluses || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="guideLocal"
+                                    label={t('guide_local_francophone')}
+                                    checked={postData.guideLocal || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="repasInclus"
+                                    label={t('repas_inclus')}
+                                    checked={postData.repasInclus || false}
+                                    onChange={handleChangeInput}
+                                />
+                            </Col>
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="transfertAeroport"
+                                    label={t('transfert_aeroport')}
+                                    checked={postData.transfertAeroport || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="excursions"
+                                    label={t('excursions_incluses')}
+                                    checked={postData.excursions?.length > 0 || false}
+                                    onChange={(e) => handleArrayChange('excursions', 'incluses', e.target.checked)}
+                                />
+                            </Col>
+                        </div>
+                    </Accordion.Body>
+                </Accordion.Item>
+            </Accordion>
+
+            <ContactReservation postData={postData} handleChangeInput={handleChangeInput} t={t} />
+        </>
+    );
+
+    const renderLocationVacancesFields = () => (
+        <>
+            <Accordion activeKey={activeAccordion} onSelect={setActiveAccordion} className="mb-3">
+                {/* Caractéristiques du Logement */}
+                <Accordion.Item eventKey="0">
+                    <Accordion.Header>
+                        <i className="fas fa-home me-2 text-primary"></i>
+                        {t('caracteristiques_logement')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row className="g-3">
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('capacite_personnes')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="capacitePersonnes"
+                                        value={postData.capacitePersonnes}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('capacite_personnes')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('nombre_chambres')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="nombreChambres"
+                                        value={postData.nombreChambres}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('nombre_chambres')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('nombre_salles_bain')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="nombreSallesBain"
+                                        value={postData.nombreSallesBain}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('nombre_salles_bain')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Row className="g-3 mt-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('superficie')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="superficie"
+                                        value={postData.superficie}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('superficie')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('etage')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="etage"
+                                        value={postData.etage}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('etage')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Équipements et Services */}
+                <Accordion.Item eventKey="1">
+                    <Accordion.Header>
+                        <i className="fas fa-tv me-2 text-success"></i>
+                        {t('equipements_services')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row>
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="wifiGratuit"
+                                    label={t('wifi_gratuit')}
+                                    checked={postData.wifiGratuit || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="climatisation"
+                                    label={t('climatisation')}
+                                    checked={postData.climatisation || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="cuisineEquipee"
+                                    label={t('cuisine_equipee')}
+                                    checked={postData.cuisineEquipee || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="television"
+                                    label={t('television')}
+                                    checked={postData.television || false}
+                                    onChange={handleChangeInput}
+                                />
+                            </Col>
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="piscine"
+                                    label={t('piscine')}
+                                    checked={postData.piscine || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="parking"
+                                    label={t('parking')}
+                                    checked={postData.parking || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="animauxAcceptes"
+                                    label={t('animaux_acceptes')}
+                                    checked={postData.animauxAcceptes || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="menageInclus"
+                                    label={t('menage_inclus')}
+                                    checked={postData.menageInclus || false}
+                                    onChange={handleChangeInput}
+                                />
+                            </Col>
+                        </Row>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Informations de Séjour */}
+                <Accordion.Item eventKey="2">
+                    <Accordion.Header>
+                        <i className="fas fa-calendar-check me-2 text-info"></i>
+                        {t('informations_sejour')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('check_in')}</Form.Label>
+                                    <Form.Control
+                                        type="time"
+                                        name="checkInTime"
+                                        value={postData.checkInTime}
+                                        onChange={handleChangeInput}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('check_out')}</Form.Label>
+                                    <Form.Control
+                                        type="time"
+                                        name="checkOutTime"
+                                        value={postData.checkOutTime}
+                                        onChange={handleChangeInput}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('conditions_annulation')}</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="conditionsAnnulation"
+                                value={postData.conditionsAnnulation}
+                                onChange={handleChangeInput}
+                                placeholder={t('conditions_annulation')}
+                            />
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Prix et Réservation */}
+                <Accordion.Item eventKey="3">
+                    <Accordion.Header>
+                        <i className="fas fa-euro-sign me-2 text-warning"></i>
+                        {t('prix_reservation')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <PriceSlider postData={postData} setPostData={setPostData} t={t} />
+                        
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('options_paiement')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['especes', 'carte_credit', 'virement', 'cheque'].map(option => (
+                                    <Form.Check
+                                        key={option}
+                                        type="checkbox"
+                                        label={t(`option_${option}`)}
+                                        checked={postData.optionsPaiement?.includes(option) || false}
+                                        onChange={(e) => handleArrayChange('optionsPaiement', option, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+
+                        <Row className="g-3 mt-3">
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="acompteRequise"
+                                    label={t('acompte_requise')}
+                                    checked={postData.acompteRequise || false}
+                                    onChange={handleChangeInput}
+                                />
+                            </Col>
+                            <Col md={6}>
+                                {postData.acompteRequise && (
+                                    <Form.Group>
+                                        <Form.Label>{t('pourcentage_acompte')}</Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            name="pourcentageAcompte"
+                                            value={postData.pourcentageAcompte}
+                                            onChange={handleChangeInput}
+                                            placeholder="30%"
+                                        />
+                                    </Form.Group>
+                                )}
+                            </Col>
+                        </Row>
+                    </Accordion.Body>
+                </Accordion.Item>
+            </Accordion>
+
+            <ContactReservation postData={postData} handleChangeInput={handleChangeInput} t={t} />
+        </>
+    );
+
+    const renderHadjOmraFields = () => (
+        <>
+            <Accordion activeKey={activeAccordion} onSelect={setActiveAccordion} className="mb-3">
+                {/* Informations du Pèlerinage */}
+                <Accordion.Item eventKey="0">
+                    <Accordion.Header>
+                        <i className="fas fa-kaaba me-2 text-primary"></i>
+                        {t('informations_peletinage')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('type_peletinage')}</Form.Label>
+                                    <Form.Select 
+                                        name="typeVoyage"
+                                        value={postData.typeVoyage}
+                                        onChange={handleChangeInput}
+                                    >
+                                        <option value="">{t('select_type')}</option>
+                                        <option value="hadj">{t('type_hadj')}</option>
+                                        <option value="omra">{t('type_omra')}</option>
+                                        <option value="hadj_omra">{t('type_hadj_omra')}</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('niveau_confort')}</Form.Label>
+                                    <Form.Select 
+                                        name="niveauConfort"
+                                        value={postData.niveauConfort}
+                                        onChange={handleChangeInput}
+                                    >
+                                        <option value="">{t('select_confort')}</option>
+                                        <option value="economique">{t('comfort_economique')}</option>
+                                        <option value="standard">{t('comfort_standard')}</option>
+                                        <option value="confort">{t('comfort_confort')}</option>
+                                        <option value="luxe">{t('comfort_luxe')}</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('destination_principale')}</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="destinacionhadj"
+                                value={postData.destinacionhadj}
+                                onChange={handleChangeInput}
+                                placeholder={t('destination_principale')}
+                            />
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Dates et Durée */}
+                <Accordion.Item eventKey="1">
+                    <Accordion.Header>
+                        <i className="fas fa-calendar-alt me-2 text-success"></i>
+                        {t('dates_duree')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Horariodesalida postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <DurationInput postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <ReturnDateInput postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Transport et Hébergement */}
+                <Accordion.Item eventKey="2">
+                    <Accordion.Header>
+                        <i className="fas fa-hotel me-2 text-info"></i>
+                        {t('transport_destinations')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <TransportSelect postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        <PensionSelect postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                        
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('distance_lieux_saints')}</Form.Label>
+                            <Form.Select 
+                                name="niveauConfort"
+                                value={postData.niveauConfort}
+                                onChange={handleChangeInput}
+                            >
+                                <option value="">{t('select_type')}</option>
+                                <option value="tres_proche">{t('distance_tres_proche')}</option>
+                                <option value="proche">{t('distance_proche')}</option>
+                                <option value="moyenne">{t('distance_moyenne')}</option>
+                                <option value="eloigne">{t('distance_eloigne')}</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Services Spirituels */}
+                <Accordion.Item eventKey="3">
+                    <Accordion.Header>
+                        <i className="fas fa-book-quran me-2 text-warning"></i>
+                        {t('services_spirituels')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Form.Group>
+                            <Form.Label>{t('services_religieux_inclus')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['guide_religieux', 'cours_rituels', 'assistance_ihram', 'groupe_etude', 'prieres_collectives'].map(service => (
+                                    <Form.Check
+                                        key={service}
+                                        type="checkbox"
+                                        label={t(`service_${service}`)}
+                                        checked={postData.servicesInclus?.includes(service) || false}
+                                        onChange={(e) => handleArrayChange('servicesInclus', service, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('langue_guide')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['arabe', 'francais', 'anglais', 'berbere'].map(langue => (
+                                    <Form.Check
+                                        key={langue}
+                                        type="checkbox"
+                                        label={t(`langue_${langue}`)}
+                                        checked={postData.language?.includes(langue) || false}
+                                        onChange={(e) => handleArrayChange('language', langue, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Prix et Conditions */}
+                <Accordion.Item eventKey="4">
+                    <Accordion.Header>
+                        <i className="fas fa-euro-sign me-2 text-success"></i>
+                        {t('prix_conditions')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <PriceSlider postData={postData} setPostData={setPostData} t={t} />
+                        
+                        <Row className="g-3 mt-3">
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_adulte')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixAdulte"
+                                        value={postData.prixAdulte}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_adulte')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_enfant')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixEnfant"
+                                        value={postData.prixEnfant}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_enfant')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label>{t('prix_bebe')}</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="prixBebe"
+                                        value={postData.prixBebe}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('prix_par_bebe')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <CancellationPolicy postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Documents Requis */}
+                <Accordion.Item eventKey="5">
+                    <Accordion.Header>
+                        <i className="fas fa-passport me-2 text-danger"></i>
+                        {t('documents_requis')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Form.Group>
+                            <Form.Label>{t('documents_necessaires')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['passeport', 'photos_identite', 'certificat_vaccination', 'reservation_hotel', 'billet_avion'].map(doc => (
+                                    <Form.Check
+                                        key={doc}
+                                        type="checkbox"
+                                        label={t(`document_${doc}`)}
+                                        checked={postData.documentsRequises?.includes(doc) || false}
+                                        onChange={(e) => handleArrayChange('documentsRequises', doc, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+
+                        <Row className="g-3 mt-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('delai_traitement')}</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="delaiTraitement"
+                                        value={postData.delaiTraitement}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('delai_traitement')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('assistance_administrative')}</Form.Label>
+                                    <Form.Check
+                                        type="checkbox"
+                                        name="assurancesIncluses"
+                                        label={t('assistance_administrative')}
+                                        checked={postData.assurancesIncluses || false}
+                                        onChange={handleChangeInput}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Accordion.Body>
+                </Accordion.Item>
+            </Accordion>
+
+            <ContactReservation postData={postData} handleChangeInput={handleChangeInput} t={t} />
+        </>
+    );
+
+    const renderReservationsVisaFields = () => (
+        <>
+            <Accordion activeKey={activeAccordion} onSelect={setActiveAccordion} className="mb-3">
+                {/* Informations Visa */}
+                <Accordion.Item eventKey="0">
+                    <Accordion.Header>
+                        <i className="fas fa-passport me-2 text-primary"></i>
+                        {t('informations_visa')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('type_visa')}</Form.Label>
+                                    <Form.Select 
+                                        name="typeVisa"
+                                        value={postData.typeVisa}
+                                        onChange={handleChangeInput}
+                                    >
+                                        <option value="">{t('select_type')}</option>
+                                        <option value="touristique">{t('type_touristique')}</option>
+                                        <option value="affaires">{t('type_affaires')}</option>
+                                        <option value="etudiant">{t('type_etudiant')}</option>
+                                        <option value="medical">{t('type_medical')}</option>
+                                        <option value="transit">{t('type_transit')}</option>
+                                        <option value="familial">{t('type_familial')}</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('pays_destination')}</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="paysDestination"
+                                        value={postData.paysDestination}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('pays_destination')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Row className="g-3 mt-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('duree_validite')}</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="dureeValidite"
+                                        value={postData.dureeValidite}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('duree_validite')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>{t('delai_traitement')}</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="delaiTraitement"
+                                        value={postData.delaiTraitement}
+                                        onChange={handleChangeInput}
+                                        placeholder={t('delai_traitement')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Formalités et Documents */}
+                <Accordion.Item eventKey="1">
+                    <Accordion.Header>
+                        <i className="fas fa-file-alt me-2 text-success"></i>
+                        {t('formalites_documents')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <Form.Group>
+                            <Form.Label>{t('documents_necessaires')}</Form.Label>
+                            <div className="d-flex flex-wrap gap-3">
+                                {['passeport', 'photos_identite', 'justificatif_domicile', 'releve_bancaire', 'billet_avion', 'reservation_hotel', 'assurance_voyage', 'lettre_invitation'].map(doc => (
+                                    <Form.Check
+                                        key={doc}
+                                        type="checkbox"
+                                        label={t(`document_${doc}`)}
+                                        checked={postData.documentsRequises?.includes(doc) || false}
+                                        onChange={(e) => handleArrayChange('documentsRequises', doc, e.target.checked)}
+                                    />
+                                ))}
+                            </div>
+                        </Form.Group>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('formalites_speciales')}</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="formalites"
+                                value={postData.formalites}
+                                onChange={handleChangeInput}
+                                placeholder={t('formalites_speciales')}
+                            />
+                        </Form.Group>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Services Inclus */}
+                <Accordion.Item eventKey="2">
+                    <Accordion.Header>
+                        <i className="fas fa-concierge-bell me-2 text-info"></i>
+                        {t('services_inclus')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <div className="row g-3">
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="assurancesIncluses"
+                                    label={t('assistance_complete_dossier')}
+                                    checked={postData.assurancesIncluses || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="guideLocal"
+                                    label={t('remplissage_formulaires')}
+                                    checked={postData.guideLocal || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="repasInclus"
+                                    label={t('prise_rendez_vous')}
+                                    checked={postData.repasInclus || false}
+                                    onChange={handleChangeInput}
+                                />
+                            </Col>
+                            <Col md={6}>
+                                <Form.Check
+                                    type="checkbox"
+                                    name="transfertAeroport"
+                                    label={t('accompagnement_ambassade')}
+                                    checked={postData.transfertAeroport || false}
+                                    onChange={handleChangeInput}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    name="excursions"
+                                    label={t('suivi_dossier_temps_reel')}
+                                    checked={postData.excursions?.length > 0 || false}
+                                    onChange={(e) => handleArrayChange('excursions', 'suivi', e.target.checked)}
+                                />
+                            </Col>
+                        </div>
+                    </Accordion.Body>
+                </Accordion.Item>
+
+                {/* Tarifs et Conditions */}
+                <Accordion.Item eventKey="3">
+                    <Accordion.Header>
+                        <i className="fas fa-euro-sign me-2 text-warning"></i>
+                        {t('tarifs_conditions')}
+                    </Accordion.Header>
+                    <Accordion.Body>
+                        <PriceSlider postData={postData} setPostData={setPostData} t={t} />
+                        
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('frais_dossier')}</Form.Label>
+                            <Form.Control
+                                type="number"
+                                name="prixAdulte"
+                                value={postData.prixAdulte}
+                                onChange={handleChangeInput}
+                                placeholder={t('frais_dossier')}
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>{t('frais_ambassade')}</Form.Label>
+                            <Form.Control
+                                type="number"
+                                name="prixEnfant"
+                                value={postData.prixEnfant}
+                                onChange={handleChangeInput}
+                                placeholder={t('frais_ambassade')}
+                            />
+                        </Form.Group>
+
+                        <CancellationPolicy postData={postData} handleChangeInput={handleChangeInput} t={t} />
+                    </Accordion.Body>
+                </Accordion.Item>
+            </Accordion>
+
+            <ContactReservation postData={postData} handleChangeInput={handleChangeInput} t={t} />
+        </>
+    );
 
     return (
-        <Container fluid className="py-3" style={{
-            minHeight: '100vh',
-            background: theme ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-        }}>
+        <Container className="my-4">
             <Row className="justify-content-center">
-                <Col xs={12} lg={8} xl={6}>
-                    {/* Header Card */}
-                    <Card className={`mb-4 ${theme ? 'bg-dark text-white' : 'bg-light'}`} 
-                          style={{ 
-                              border: 'none', 
-                              borderRadius: '20px',
-                              backdropFilter: 'blur(10px)',
-                              background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)'
-                          }}>
-                        <Card.Body className="p-4">
-                            <div className="d-flex align-items-center justify-content-between">
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className="rounded-circle d-flex align-items-center justify-content-center"
-                                         style={{
-                                             width: '50px',
-                                             height: '50px',
-                                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                             fontSize: '1.5rem',
-                                             fontWeight: 'bold',
-                                             color: 'white'
-                                         }}>
-                                        {auth.user.username?.[0]?.toUpperCase() || 'U'}
-                                    </div>
-                                    <div>
-                                        <h4 className="mb-1 fw-bold">
-                                            {isEdit ? t('edit_post') : t('create_post')}
-                                        </h4>
-                                        <p className="mb-0 text-muted">
-                                            {t('share_your_moment')}
-                                        </p>
-                                    </div>
-                                </div>
-                                <Button
-                                    variant={theme ? "outline-light" : "outline-dark"}
-                                    className="rounded-circle p-0 d-flex align-items-center justify-content-center"
-                                    style={{ width: '40px', height: '40px' }}
-                                    onClick={handleCancel}
-                                >
-                                    ×
-                                </Button>
-                            </div>
-                        </Card.Body>
-                    </Card>
+                <Col lg={10}>
+                    <Card>
+                        <Card.Header className={isEdit ? "bg-warning text-dark" : "bg-primary text-white"}>
+                            <h4 className="mb-0">
+                                {isEdit ? `✏️ ${t('edit_title')}` : `📢 ${t('create_title')}`}
+                            </h4>
+                            {isEdit && postToEdit?.title && (
+                                <small>{t('modification')}: "{postToEdit.title}"</small>
+                            )}
+                        </Card.Header>
+                        <Card.Body>
+                            {/* 🔷 DEBUG INFO */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <Alert variant="info" className="mb-3">
+                                    <strong>Debug:</strong> {t('debug_mode')}: {isEdit ? t('edit_title') : t('create_title')} | 
+                                    {t('debug_id')}: {postToEdit?._id || 'N/A'} | 
+                                    {t('debug_category')}: {postData.subCategory || t('debug_not_selected')}
+                                </Alert>
+                            )}
 
-                    {/* Main Content Card */}
-                    <Card className={`${theme ? 'bg-dark text-white' : 'bg-light'}`}
-                          style={{ 
-                              border: 'none', 
-                              borderRadius: '20px',
-                              backdropFilter: 'blur(10px)',
-                              background: theme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.95)'
-                          }}>
-                        <Card.Body className="p-4">
+                            {showAlert && (
+                                <Alert 
+                                    variant={alertVariant} 
+                                    dismissible 
+                                    onClose={() => setShowAlert(false)}
+                                    className="mb-4"
+                                >
+                                    {alertMessage}
+                                </Alert>
+                            )}
+
                             <Form onSubmit={handleSubmit}>
                                 
-                                {/* Sección: Información del Proyecto */}
-                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
-                                      style={{ border: 'none', borderRadius: '16px' }}>
-                                    <Card.Body className="p-4">
-                                        <h5 className="mb-3 d-flex align-items-center gap-2">
-                                            <i className="fas fa-info-circle text-primary"></i>
-                                            {t('project_info_section')}
-                                        </h5>
+                                {/* Selector de Categoría */}
+                                <CategorySelector 
+                                    postData={postData} 
+                                    handleChangeInput={handleChangeInput} 
+                                    t={t}
+                                />
 
-                                        {/* Campo Tipo de Aplicación */}
-                                        <Form.Group className="mb-3">
-                                            <Form.Label className="fw-semibold">
-                                                <i className="fas fa-heading me-2 text-primary"></i>
-                                                {t('custom_title_label')}
-                                            </Form.Label>
-                                            <Form.Select
-                                                value={title}
-                                                onChange={e => setTitle(e.target.value)}
-                                                className={theme ? 'bg-dark text-white' : ''}
-                                                size="lg"
-                                            >
-                                                {apptitleOptions.map(option => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </Form.Select>
-                                        </Form.Group>
+                                {/* Campos comunes a todas las categorías */}
+                                {postData.subCategory && (
+                                    <>
+                                        <TitleInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            placeholder={
+                                                postData.subCategory === "Voyage_Organise" ? t('placeholder_voyage') :
+                                                postData.subCategory === "Location_Vacances" ? t('placeholder_location') :
+                                                postData.subCategory === "hadj_Omra" ? t('placeholder_hadj') :
+                                                t('placeholder_visa')
+                                            }
+                                            t={t}
+                                        />
+                                        <DescriptionTextarea 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            t={t}
+                                        />
+                                        <AddressInput 
+                                            postData={postData}
+                                            handleChangeInput={handleChangeInput}
+                                            wilayasOptions={wilayasOptions}
+                                            communesOptions={communesOptions}
+                                            handleWilayaChange={handleWilayaChange}
+                                            handleCommuneChange={handleCommuneChange}
+                                            t={t}
+                                        />
+                                    </>
+                                )}
 
-                                        {/* Campo Link */}
-                                        <Form.Group className="mb-3">
-                                            <Form.Label className="fw-semibold">
-                                                <i className="fas fa-link me-2 text-primary"></i>
-                                                {t('link_label') || 'Enlace de la aplicación'}
-                                            </Form.Label>
-                                            <InputGroup>
-                                                <InputGroup.Text>
-                                                    <i className="fas fa-globe"></i>
-                                                </InputGroup.Text>
-                                                <Form.Control
-                                                    type="url"
-                                                    placeholder="https://tu-aplicacion.com"
-                                                    value={link}
-                                                    onChange={e => setLink(e.target.value)}
-                                                    className={theme ? 'bg-dark text-white' : ''}
-                                                    isValid={link && isValidUrl(link)}
-                                                    isInvalid={link && !isValidUrl(link)}
-                                                />
-                                                <Form.Control.Feedback type="invalid">
-                                                    {t('invalid_url') || 'Por favor ingresa una URL válida'}
-                                                </Form.Control.Feedback>
-                                            </InputGroup>
-                                            <Form.Text className="text-muted">
-                                                {t('link_help_text') || 'Ingresa el enlace donde se puede ver o probar tu aplicación'}
-                                            </Form.Text>
-                                        </Form.Group>
+                                {/* Campos dinámicos según subcategoría */}
+                                {postData.subCategory === "Voyage_Organise" && renderVoyageOrganiseFields()}
+                                {postData.subCategory === "Location_Vacances" && renderLocationVacancesFields()}
+                                {postData.subCategory === "hadj_Omra" && renderHadjOmraFields()}
+                                {postData.subCategory === "Reservations_Visa" && renderReservationsVisaFields()}
 
-                                        {/* Campo Descripción */}
-                                        <Form.Group>
-                                            <Form.Label className="fw-semibold">
-                                                <i className="fas fa-align-left me-2 text-primary"></i>
-                                                {t('description_label')}
-                                            </Form.Label>
-                                            <Form.Control
-                                                as="textarea"
-                                                rows={4}
-                                                placeholder={t('post_content_placeholder', { username: auth.user.username })}
-                                                value={content}
-                                                onChange={e => setContent(e.target.value)}
-                                                className={theme ? 'bg-dark text-white' : ''}
-                                            />
-                                        </Form.Group>
-                                    </Card.Body>
-                                </Card>
+                                {/* Componente de imágenes */}
+                                <ImageUpload 
+                                    images={images}
+                                    handleChangeImages={handleChangeImages}
+                                    deleteImages={deleteImages}
+                                    theme={theme}
+                                    t={t}
+                                />
 
-                                {/* Sección: Información de Precios */}
-                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
-                                      style={{ border: 'none', borderRadius: '16px' }}>
-                                    <Card.Body className="p-4">
-                                        <h5 className="mb-3 d-flex align-items-center gap-2">
-                                            <i className="fas fa-tag text-primary"></i>
-                                            {t('pricing_section')}
-                                        </h5>
-
-                                        <Row>
-                                            {/* Precio */}
-                                            <Col md={4}>
-                                                <Form.Group className="mb-3">
-                                                    <Form.Label className="fw-semibold">
-                                                        <i className="fas fa-dollar-sign me-2 text-primary"></i>
-                                                        {t('price_label')}
-                                                    </Form.Label>
-                                                    <Form.Control
-                                                        type="number"
-                                                        placeholder="0.00"
-                                                        value={price}
-                                                        onChange={e => setPrice(e.target.value)}
-                                                        className={theme ? 'bg-dark text-white' : ''}
-                                                    />
-                                                </Form.Group>
-                                            </Col>
-
-                                            {/* Moneda */}
-                                            <Col md={4}>
-                                                <Form.Group className="mb-3">
-                                                    <Form.Label className="fw-semibold">
-                                                        <i className="fas fa-coins me-2 text-primary"></i>
-                                                        {t('currency_label')}
-                                                    </Form.Label>
-                                                    <Form.Select
-                                                        value={priceType}
-                                                        onChange={e => setPriceType(e.target.value)}
-                                                        className={theme ? 'bg-dark text-white' : ''}
-                                                    >
-                                                        {priceTypeOptions.map(option => (
-                                                            <option key={option.value} value={option.value}>
-                                                                {option.label}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-
-                                            {/* Tipo de Oferta */}
-                                            <Col md={4}>
-                                                <Form.Group className="mb-3">
-                                                    <Form.Label className="fw-semibold">
-                                                        <i className="fas fa-handshake me-2 text-primary"></i>
-                                                        {t('offer_type_label')}
-                                                    </Form.Label>
-                                                    <Form.Select
-                                                        value={offerType}
-                                                        onChange={e => setOfferType(e.target.value)}
-                                                        className={theme ? 'bg-dark text-white' : ''}
-                                                    >
-                                                        {offerTypeOptions.map(option => (
-                                                            <option key={option.value} value={option.value}>
-                                                                {option.label}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                        </Row>
-                                    </Card.Body>
-                                </Card>
-
-                                {/* Sección: Características */}
-                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
-                                      style={{ border: 'none', borderRadius: '16px' }}>
-                                    <Card.Body className="p-4">
-                                        <h5 className="mb-3 d-flex align-items-center gap-2">
-                                            <i className="fas fa-cogs text-primary"></i>
-                                            {t('features_section')}
-                                        </h5>
-
-                                        <div style={{ 
-                                            maxHeight: '400px', 
-                                            overflowY: 'auto',
-                                            padding: '0.5rem'
-                                        }}>
-                                            <Row>
-                                                {featuresOptions.map(option => (
-                                                    <Col xs={12} md={6} key={option.value} className="mb-2">
-                                                        <Form.Check
-                                                            type="checkbox"
-                                                            id={`feature-${option.value}`}
-                                                            label={option.label}
-                                                            value={option.value}
-                                                            checked={features.includes(option.value)}
-                                                            onChange={handleFeatureChange}
-                                                            className={theme ? 'text-white' : ''}
-                                                        />
-                                                    </Col>
-                                                ))}
-                                            </Row>
-                                        </div>
-                                        
-                                        <div className="text-center mt-3">
-                                            <Badge bg="primary" className="p-2">
-                                                {t('features_selected_count', { count: features.length })}
-                                            </Badge>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-
-                                {/* Sección: Multimedia */}
-                                <Card className={`mb-4 ${theme ? 'bg-dark' : 'bg-light'}`} 
-                                      style={{ border: 'none', borderRadius: '16px' }}>
-                                    <Card.Body className="p-4">
-                                        <h5 className="mb-3 d-flex align-items-center gap-2">
-                                            <i className="fas fa-images text-primary"></i>
-                                            {t('media_section')}
-                                        </h5>
-
-                                        {/* Image Preview Grid */}
-                                        {images.length > 0 && (
-                                            <Row className="mb-3 g-2">
-                                                {images.map((img, index) => (
-                                                    <Col xs={6} sm={4} md={3} key={index}>
-                                                        <div className="position-relative rounded" 
-                                                             style={{ aspectRatio: '1/1' }}>
-                                                            <div className="w-100 h-100 rounded">
-                                                                {img.url ?
-                                                                    imageShow(img.url, theme)
-                                                                    :
-                                                                    imageShow(URL.createObjectURL(img), theme)
-                                                                }
-                                                            </div>
-                                                            <Button
-                                                                variant="danger"
-                                                                size="sm"
-                                                                className="position-absolute top-0 end-0 m-1 rounded-circle"
-                                                                style={{ width: '30px', height: '30px' }}
-                                                                onClick={() => deleteImages(index)}
-                                                            >
-                                                                ×
-                                                            </Button>
-                                                        </div>
-                                                    </Col>
-                                                ))}
-                                            </Row>
-                                        )}
-
-                                        {/* Upload Button */}
-                                        <Form.Group>
-                                            <Form.Label 
-                                                htmlFor="fileInput"
-                                                className="d-flex flex-column align-items-center justify-content-center border-dashed rounded p-4 cursor-pointer"
-                                                style={{
-                                                    border: theme ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed #dee2e6',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.3s ease'
-                                                }}
-                                            >
-                                                <i className="fas fa-image text-primary mb-2" style={{ fontSize: '2rem' }}></i>
-                                                <span className={theme ? 'text-white' : 'text-muted'}>
-                                                    {images.length > 0 ? t('add_more_photos') : t('add_photos_to_post')}
-                                                </span>
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="file"
-                                                id="fileInput"
-                                                multiple
-                                                accept="image/*"
-                                                onChange={handleChangeImages}
-                                                className="d-none"
-                                            />
-                                        </Form.Group>
-                                    </Card.Body>
-                                </Card>
-
-                                {/* Action Buttons */}
-                                <Row className="mt-4">
-                                    <Col>
-                                        <div className="d-flex gap-3">
-                                            <Button
-                                                variant={theme ? "outline-light" : "outline-secondary"}
-                                                size="lg"
-                                                className="flex-fill"
-                                                onClick={handleCancel}
-                                            >
-                                                {t('cancel_button')}
-                                            </Button>
-                                            <Button
-                                                variant="primary"
-                                                size="lg"
-                                                className="flex-fill"
-                                                type="submit"
-                                                style={{
-                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                    border: 'none'
-                                                }}
-                                            >
-                                                {isEdit ? t('update_post_button') : t('create_post_button')}
-                                            </Button>
-                                        </div>
-                                    </Col>
-                                </Row>
+                                {/* Botones */}
+                                <div className="d-flex gap-2 mt-4">
+                                    <Button 
+                                        variant={isEdit ? "warning" : "success"} 
+                                        type="submit" 
+                                        size="lg"
+                                        className="flex-fill"
+                                    >
+                                        {isEdit ? `💾 ${t('button_update')}` : `📢 ${t('button_publish')}`}
+                                    </Button>
+                                    
+                                    <Button 
+                                        variant="secondary" 
+                                        type="button" 
+                                        size="lg"
+                                        onClick={handleCancel}
+                                    >
+                                        ❌ {t('button_cancel')}
+                                    </Button>
+                                </div>
                             </Form>
                         </Card.Body>
                     </Card>
                 </Col>
             </Row>
         </Container>
-    )
-}
+    );
+};
 
-export default CreatePost
+export default Createpost;

@@ -1,0 +1,594 @@
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Form, 
+  Button, 
+  Alert
+} from 'react-bootstrap';
+
+// Importar todos los componentes modulares
+import CategorySelector from '../components/forms/CategorySelector';
+import TitleInput from '../components/forms/TitleInput';
+import DescriptionTextarea from '../components/forms/DescriptionTextarea';
+import AddressInput from '../components/forms/AddressInput';
+import Horariodesalida from '../components/forms/Horariodesalida';
+import DurationInput from '../components/forms/DurationInput';
+import TransportSelect from '../components/forms/TransportSelect';
+import DestinationManager from '../components/forms/DestinationManager';
+import PensionSelect from '../components/forms/PensionSelect';
+import ReturnDateInput from '../components/forms/ReturnDateInput';
+import PriceSlider from '../components/forms/PriceSlider';
+import CancellationPolicy from '../components/forms/CancellationPolicy';
+import ContactReservation from '../components/forms/ContactReservation';
+import ImageUpload from '../components/forms/ImageUpload';
+
+// Importar acciones y tipos
+import { createPost, updatePost } from '../redux/actions/postAction';
+import communesjson from "../json/communes.json";
+
+const Createpost = () => {
+    const { auth, theme, socket } = useSelector((state) => state);
+    const dispatch = useDispatch();
+    const history = useHistory();
+    const location = useLocation();
+
+    // 🔷 OBTENER DATOS DE EDICIÓN DESDE location.state
+    const isEdit = location.state?.isEdit || false;
+    const postToEdit = location.state?.postData || null;
+
+    console.log('🚀 CREATEPOST MOUNTED - Modo:', isEdit ? 'EDICIÓN' : 'CREACIÓN');
+    console.log('📍 Datos recibidos:', postToEdit);
+    console.log('📍 Location state:', location.state);
+
+    // Estado inicial
+    const initialState = {
+        category: "Agence de Voyage",
+        subCategory: "",
+        title: "",
+        description: "",
+        price: "",
+        wilaya: "",
+        commune: "",
+        contacto: "",
+        itemsReservations_Visa: "",
+        Location_Vacances: '',
+        alquilergeneral: "",
+        superficie: "",
+        etage: "",
+        promoteurimmobilier: false,
+        specifications: [],
+        adress: "",
+        nombredelhotel: "",
+        adresshotel: "",
+        totalhabitaciones: "",
+        tipodehabutaciones: [],
+        estrellas: "",
+        wifi: [],
+        language: [],
+        tarifnuit: "",
+        reservacionenlinea: "",
+        politiqueAnnulation: "",
+        hotelWebsite: "",
+        horariollegada: "",
+        horadudepar: "",
+        datedepar: "",
+        duracionviaje: "",
+        transporte: "",
+        destinacionvoyage1: "",
+        voyage1hotel1: "",
+        voyage1nombrehotel1: "",
+        destinacionvoyage2: "",
+        voyage2hotel2: "",
+        voyage1nombrehotel2: "",
+        fecharegreso: "",
+        serviciosdelhotel: "",
+        incluidoenelprecio: "",
+        cancelarreserva: "",
+        destinacionhadj: "",
+    };
+
+    // Estados
+    const [postData, setPostData] = useState(initialState);
+    const [images, setImages] = useState([]);
+    const [selectedWilaya, setSelectedWilaya] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertVariant, setAlertVariant] = useState("info");
+
+    // 🔷 EFFECT PARA CARGAR DATOS DE EDICIÓN (LÓGICA QUE FUNCIONA)
+    useEffect(() => {
+        console.log('🔄 Effect ejecutándose - isEdit:', isEdit, 'postToEdit:', postToEdit);
+        
+        if (isEdit && postToEdit) {
+            console.log('🎯 Cargando datos para edición:', postToEdit);
+            
+            // Cargar datos del post en el estado
+            setPostData({
+                category: postToEdit.category || "Agence de Voyage",
+                subCategory: postToEdit.subCategory || "",
+                description: postToEdit.description || postToEdit.content || "",
+                title: postToEdit.title || "",
+                adress: postToEdit.adress || "",
+                price: postToEdit.price || "",
+                wilaya: postToEdit.wilaya || "",
+                commune: postToEdit.commune || "",
+                contacto: postToEdit.contacto || "",
+                alquilergeneral: postToEdit.alquilergeneral || "",
+                itemsReservations_Visa: postToEdit.itemsReservations_Visa || "",
+                Location_Vacances: postToEdit.Location_Vacances || "",
+                specifications: postToEdit.specifications || [],
+                promoteurimmobilier: postToEdit.promoteurimmobilier || false,
+                superficie: postToEdit.superficie || "",
+                etage: postToEdit.etage || "",
+                nombredelhotel: postToEdit.nombredelhotel || "",
+                adresshotel: postToEdit.adresshotel || "",
+                totalhabitaciones: postToEdit.totalhabitaciones || "",
+                tipodehabutaciones: postToEdit.tipodehabutaciones || [],
+                estrellas: postToEdit.estrellas || "",
+                wifi: postToEdit.wifi || [],
+                language: postToEdit.language || [],
+                tarifnuit: postToEdit.tarifnuit || "",
+                reservacionenlinea: postToEdit.reservacionenlinea || "",
+                politiqueAnnulation: postToEdit.politiqueAnnulation || "",
+                hotelWebsite: postToEdit.hotelWebsite || "",
+                horariollegada: postToEdit.horariollegada || "",
+                horadudepar: postToEdit.horadudepar || "",
+                datedepar: postToEdit.datedepar || "",
+                duracionviaje: postToEdit.duracionviaje || "",
+                transporte: postToEdit.transporte || "",
+                destinacionvoyage1: postToEdit.destinacionvoyage1 || "",
+                voyage1hotel1: postToEdit.voyage1hotel1 || "",
+                voyage1nombrehotel1: postToEdit.voyage1nombrehotel1 || "",
+                destinacionvoyage2: postToEdit.destinacionvoyage2 || "",
+                voyage2hotel2: postToEdit.voyage2hotel2 || "",
+                voyage1nombrehotel2: postToEdit.voyage1nombrehotel2 || "",
+                fecharegreso: postToEdit.fecharegreso || "",
+                serviciosdelhotel: postToEdit.serviciosdelhotel || "",
+                incluidoenelprecio: postToEdit.incluidoenelprecio || "",
+                cancelarreserva: postToEdit.cancelarreserva || "",
+                destinacionhadj: postToEdit.destinacionhadj || "",
+            });
+
+            // Cargar imágenes
+            if (postToEdit.images && postToEdit.images.length > 0) {
+                console.log('🖼️ Cargando imágenes:', postToEdit.images);
+                setImages(postToEdit.images.map(img => ({
+                    url: typeof img === 'string' ? img : img.url,
+                    file: null // Para imágenes existentes
+                })));
+            } else {
+                setImages([]);
+            }
+
+            setSelectedWilaya(postToEdit.wilaya || "");
+        } else {
+            // Modo creación - resetear a estado inicial
+            console.log('🆕 Modo creación - Resetear formulario');
+            setPostData(initialState);
+            setImages([]);
+            setSelectedWilaya("");
+        }
+    }, [isEdit, postToEdit]); // Solo depende de isEdit y postToEdit
+
+    // Handlers para el formulario
+    const handleChangeInput = (e) => {
+        const { name, value, type, checked } = e.target;
+        setPostData(prevState => ({
+            ...prevState,
+            [name]: type === "checkbox" ? checked : value
+        }));
+    };
+
+    const handleWilayaChange = (event) => {
+        const selectedWilaya = event.target.value;
+        setSelectedWilaya(selectedWilaya);
+        const wilayaEncontrada = communesjson.find((wilaya) => wilaya.wilaya === selectedWilaya);
+        const communes = wilayaEncontrada ? wilayaEncontrada.commune : [];
+        
+        setPostData((prevState) => ({
+            ...prevState,
+            wilaya: selectedWilaya,
+            commune: communes.length > 0 ? communes[0] : "",
+        }));
+    };
+
+    const handleCommuneChange = (event) => {
+        const selectedCommune = event.target.value;
+        setPostData((prevState) => ({
+            ...prevState,
+            commune: selectedCommune,
+        }));
+    };
+
+    // Handler para manejar imágenes (LÓGICA QUE FUNCIONA)
+    const handleChangeImages = (e) => {
+        const files = [...e.target.files];
+        let err = "";
+        let newImages = [];
+
+        files.forEach(file => {
+            if (!file) return err = "Le fichier n'existe pas.";
+
+            if (file.size > 1024 * 1024 * 5) { // 5MB limit
+                return err = "La taille de l'image/vidéo ne doit pas dépasser 5mb.";
+            }
+
+            return newImages.push(file);
+        });
+
+        if (err) {
+            setAlertMessage(err);
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
+
+        setImages([...images, ...newImages]);
+    };
+
+    // Handler para eliminar imágenes
+    const deleteImages = (index) => {
+        const newArr = [...images];
+        newArr.splice(index, 1);
+        setImages(newArr);
+    };
+
+    // 🔷 HANDLER SUBMIT MEJORADO (LÓGICA QUE FUNCIONA)
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        console.log('📤 Enviando formulario...', { isEdit, postData, images });
+
+        // Validaciones
+        if (!postData.subCategory) {
+            setAlertMessage("Veuillez sélectionner une catégorie.");
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
+
+        if (!postData.wilaya || !postData.commune) {
+            setAlertMessage("Veuillez sélectionner une wilaya et une commune.");
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
+
+        if (images.length === 0) {
+            setAlertMessage("Veuillez ajouter au moins une photo ou vidéo.");
+            setAlertVariant("danger");
+            setShowAlert(true);
+            return;
+        }
+
+        try {
+            if (isEdit && postToEdit) {
+                // 🔷 MODO EDICIÓN
+                console.log('🔄 Ejecutando updatePost...', { 
+                    postId: postToEdit._id, 
+                    postData 
+                });
+                
+                // Crear objeto status con el ID del post
+                const status = {
+                    _id: postToEdit._id,
+                    ...postToEdit // Mantener todos los datos originales
+                };
+
+                await dispatch(updatePost({ 
+                    postData, 
+                    images, 
+                    auth, 
+                    status 
+                }));
+
+                setAlertMessage("✅ Annonce mise à jour avec succès!");
+                setAlertVariant("success");
+            } else {
+                // 🔷 MODO CREACIÓN
+                console.log('🆕 Ejecutando createPost...');
+                await dispatch(createPost({ 
+                    postData, 
+                    images, 
+                    auth, 
+                    socket 
+                }));
+
+                setAlertMessage("✅ Annonce publiée avec succès!");
+                setAlertVariant("success");
+            }
+
+            setShowAlert(true);
+
+            // Redirigir después de 2 segundos
+            setTimeout(() => {
+                history.push('/');
+            }, 2000);
+
+        } catch (error) {
+            console.error('❌ Error al enviar:', error);
+            setAlertMessage("❌ Erreur lors de la publication.");
+            setAlertVariant("danger");
+            setShowAlert(true);
+        }
+    };
+
+    // 🔷 HANDLER CANCELAR (LÓGICA QUE FUNCIONA)
+    const handleCancel = () => {
+        history.goBack();
+    };
+
+    // Opciones para wilayas y communes
+    const wilayasOptions = communesjson.map((wilaya, index) => (
+        <option key={index} value={wilaya.wilaya}>
+            {wilaya.wilaya}
+        </option>
+    ));
+
+    const communesOptions = selectedWilaya
+        ? communesjson
+            .find((wilaya) => wilaya.wilaya === selectedWilaya)
+            ?.commune?.map((commune, index) => (
+                <option key={index} value={commune}>
+                    {commune}
+                </option>
+            ))
+        : [];
+
+    return (
+        <Container className="my-4">
+            <Row className="justify-content-center">
+                <Col lg={10}>
+                    <Card>
+                        <Card.Header className={isEdit ? "bg-warning text-dark" : "bg-primary text-white"}>
+                            <h4 className="mb-0">
+                                {isEdit ? '✏️ Modifier l\'Annonce' : '📢 Créer une Nouvelle Annonce'}
+                            </h4>
+                            {isEdit && postToEdit?.title && (
+                                <small>Modification: "{postToEdit.title}"</small>
+                            )}
+                        </Card.Header>
+                        <Card.Body>
+                            {/* 🔷 DEBUG INFO */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <Alert variant="info" className="mb-3">
+                                    <strong>Debug:</strong> Modo: {isEdit ? 'EDICIÓN' : 'CREACIÓN'} | 
+                                    ID: {postToEdit?._id || 'N/A'} | 
+                                    Categoría: {postData.subCategory || 'No seleccionada'}
+                                </Alert>
+                            )}
+
+                            {showAlert && (
+                                <Alert 
+                                    variant={alertVariant} 
+                                    dismissible 
+                                    onClose={() => setShowAlert(false)}
+                                    className="mb-4"
+                                >
+                                    {alertMessage}
+                                </Alert>
+                            )}
+
+                            <Form onSubmit={handleSubmit}>
+                                
+                                {/* Selector de Categoría */}
+                                <CategorySelector 
+                                    postData={postData} 
+                                    handleChangeInput={handleChangeInput} 
+                                />
+
+                                {/* Para Viajes Organizados */}
+                                {postData.subCategory === "Voyage_Organise" && (
+                                    <>
+                                        <TitleInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            placeholder="Ex: Voyage culturel à Istanbul et Dubaï"
+                                        />
+                                        <DescriptionTextarea 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <AddressInput 
+                                            postData={postData}
+                                            handleChangeInput={handleChangeInput}
+                                            wilayasOptions={wilayasOptions}
+                                            communesOptions={communesOptions}
+                                            handleWilayaChange={handleWilayaChange}
+                                            handleCommuneChange={handleCommuneChange}
+                                        />
+                                        <Horariodesalida 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <DurationInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <TransportSelect 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <DestinationManager 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <PensionSelect 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <ReturnDateInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <PriceSlider 
+                                            postData={postData} 
+                                            setPostData={setPostData} 
+                                        />
+                                        <CancellationPolicy 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <ContactReservation 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                    </>
+                                )}
+
+                                {/* Para Location Vacances */}
+                                {postData.subCategory === "Location_Vacances" && (
+                                    <>
+                                        <TitleInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            placeholder="Ex: Belle villa avec piscine à Oran"
+                                        />
+                                        <DescriptionTextarea 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <AddressInput 
+                                            postData={postData}
+                                            handleChangeInput={handleChangeInput}
+                                            wilayasOptions={wilayasOptions}
+                                            communesOptions={communesOptions}
+                                            handleWilayaChange={handleWilayaChange}
+                                            handleCommuneChange={handleCommuneChange}
+                                        />
+                                        <PriceSlider 
+                                            postData={postData} 
+                                            setPostData={setPostData} 
+                                        />
+                                        <ContactReservation 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                    </>
+                                )}
+
+                                {/* Para Hadj & Omra */}
+                                {postData.subCategory === "hadj_Omra" && (
+                                    <>
+                                        <TitleInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            placeholder="Ex: Pèlerinage Hadj 2024 - Package Complet"
+                                        />
+                                        <DescriptionTextarea 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <AddressInput 
+                                            postData={postData}
+                                            handleChangeInput={handleChangeInput}
+                                            wilayasOptions={wilayasOptions}
+                                            communesOptions={communesOptions}
+                                            handleWilayaChange={handleWilayaChange}
+                                            handleCommuneChange={handleCommuneChange}
+                                        />
+                                        <Horariodesalida 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <DurationInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <TransportSelect 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <ReturnDateInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <PriceSlider 
+                                            postData={postData} 
+                                            setPostData={setPostData} 
+                                        />
+                                        <CancellationPolicy 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <ContactReservation 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                    </>
+                                )}
+
+                                {/* Para Reservations & Visa */}
+                                {postData.subCategory === "Reservations_Visa" && (
+                                    <>
+                                        <TitleInput 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                            placeholder="Ex: Assistance Visa Schengen - traitement rapide"
+                                        />
+                                        <DescriptionTextarea 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                        <AddressInput 
+                                            postData={postData}
+                                            handleChangeInput={handleChangeInput}
+                                            wilayasOptions={wilayasOptions}
+                                            communesOptions={communesOptions}
+                                            handleWilayaChange={handleWilayaChange}
+                                            handleCommuneChange={handleCommuneChange}
+                                        />
+                                        <PriceSlider 
+                                            postData={postData} 
+                                            setPostData={setPostData} 
+                                        />
+                                        <ContactReservation 
+                                            postData={postData} 
+                                            handleChangeInput={handleChangeInput} 
+                                        />
+                                    </>
+                                )}
+
+                                {/* Componente de imágenes */}
+                                <ImageUpload 
+                                    images={images}
+                                    handleChangeImages={handleChangeImages}
+                                    deleteImages={deleteImages}
+                                    theme={theme}
+                                />
+
+                                {/* Botones */}
+                                <div className="d-flex gap-2 mt-4">
+                                    <Button 
+                                        variant={isEdit ? "warning" : "success"} 
+                                        type="submit" 
+                                        size="lg"
+                                        className="flex-fill"
+                                    >
+                                        {isEdit ? '💾 Mettre à jour' : '📢 Publier l\'Annonce'}
+                                    </Button>
+                                    
+                                    <Button 
+                                        variant="secondary" 
+                                        type="button" 
+                                        size="lg"
+                                        onClick={handleCancel}
+                                    >
+                                        ❌ Annuler
+                                    </Button>
+                                </div>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+};
+
+export default Createpost;

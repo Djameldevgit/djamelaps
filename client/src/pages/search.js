@@ -34,23 +34,11 @@ export default function SearchPage() {
     }
   }, [languageReducer?.language, i18n]);
 
-  // 🔹 Estados consolidados
+  // 🔹 Estados consolidados - SOLO 3 CAMPOS
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
-    categories: {
-      painting: false,
-      sculpture: false,
-      photography: false,
-      drawing: false,
-      engraving: false,
-      digital_art: false,
-      collage: false,
-      textile_art: false,
-    },
-    theme: "",
-    style: "",
-    priceMin: "",
-    priceMax: "",
+    subCategory: "",
+    destinacionvoyage1: "",
     wilaya: ""
   });
 
@@ -63,31 +51,37 @@ export default function SearchPage() {
   const { auth } = useSelector((state) => state);
   const dispatch = useDispatch();
 
-  // 🔹 Búsqueda inteligente con debounce mejorado
-  const handleUserSearch = useCallback(async (value) => {
-    const searchValue = value.toLowerCase().trim();
-    setSearch(value);
-    
-    if (!searchValue) {
-      setUsers([]);
-      return;
-    }
+  // 🔹 Opciones para los selects
+  const subCategoryOptions = [
+    { value: "Voyage_Organise", label: "Voyage Organisé" },
+    { value: "Location_Vacances", label: "Location Vacances" },
+    { value: "hadj_Omra", label: "Hadj & Omra" },
+    { value: "Reservations_Visa", label: "Réservations & Visa" }
+  ];
 
-    try {
-      setUserLoading(true);
-      const res = await getDataAPI(`search?username=${searchValue}`, auth.token);
-      setUsers(res.data.users);
-    } catch (err) {
-      dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { error: t('errors.userSearchError') },
-      });
-    } finally {
-      setUserLoading(false);
+  const destinationOptions = [
+    {
+      group: "Destinations Nationales",
+      options: [
+        "Alger", "Oran", "Constantine", "Tlemcen", "Béjaïa", 
+        "Timimoun", "Djanet", "Taghit", "Boussaâda", "Oued Souf"
+      ]
+    },
+    {
+      group: "Destinations Internationales",
+      options: [
+        "Istanbul", "Dubaï", "Le Caire", "Sharm El Sheikh", "Tunis",
+        "Sousse", "Djerba", "Moscou", "Saint Petersburg", "Kuala Lumpur",
+        "Langkawi", "Bakou", "Téhéran", "Kashan", "Ispahan", "Shiraz",
+        "New York", "Los Angeles", "Las Vegas", "San Francisco", "Andalousie",
+        "Rome", "Paris", "Maldives", "Zanzibar", "Jordanie", "Ouzbékistan", "Thaïlande"
+      ]
     }
-  }, [auth.token, dispatch, t]);
+  ];
 
-  // 🔹 Buscar posts
+   
+
+  // 🔹 Buscar posts - SOLO 3 CAMPOS
   const handleSearch = async (e) => {
     e.preventDefault();
     setError(null);
@@ -97,15 +91,8 @@ export default function SearchPage() {
       const queryParams = new URLSearchParams();
       
       if (search.trim()) queryParams.append('title', search.trim().toLowerCase());
-      if (filters.theme.trim()) queryParams.append('theme', filters.theme.trim().toLowerCase());
-      if (filters.style.trim()) queryParams.append('style', filters.style.trim().toLowerCase());
-      if (filters.wilaya.trim()) queryParams.append('wilaya', filters.wilaya.trim().toLowerCase());
-      if (filters.priceMin) queryParams.append('priceMin', filters.priceMin);
-      if (filters.priceMax) queryParams.append('priceMax', filters.priceMax);
-
-      Object.entries(filters.categories).forEach(([key, value]) => {
-        queryParams.append(key, value.toString());
-      });
+      if (filters.subCategory.trim()) queryParams.append('subCategory', filters.subCategory.trim());
+      if (filters.destinacionvoyage1.trim()) queryParams.append('destinacionvoyage1', filters.destinacionvoyage1.trim());    if (filters.wilaya.trim()) queryParams.append('wilaya', filters.wilaya.trim().toLowerCase());
 
       const queryString = queryParams.toString();
       const url = `posts${queryString ? `?${queryString}` : ''}`;
@@ -129,12 +116,10 @@ export default function SearchPage() {
   };
 
   // 🔹 Manejo de filtros optimizado
-  const updateFilter = (section, key, value) => {
+  const updateFilter = (field, value) => {
     setFilters(prev => ({
       ...prev,
-      [section]: section === 'categories' 
-        ? { ...prev.categories, [key]: value }
-        : value
+      [field]: value
     }));
   };
 
@@ -142,20 +127,8 @@ export default function SearchPage() {
   const handleClearFilters = () => {
     setSearch("");
     setFilters({
-      categories: {
-        painting: false,
-        sculpture: false,
-        photography: false,
-        drawing: false,
-        engraving: false,
-        digital_art: false,
-        collage: false,
-        textile_art: false,
-      },
-      theme: "",
-      style: "",
-      priceMin: "",
-      priceMax: "",
+      subCategory: "",
+      destinacionvoyage1: "",
       wilaya: ""
     });
     setResults([]);
@@ -166,12 +139,9 @@ export default function SearchPage() {
   // 🔹 Contador de filtros activos optimizado
   const activeFiltersCount = [
     search,
-    filters.theme,
-    filters.style,
-    filters.wilaya,
-    filters.priceMin,
-    filters.priceMax,
-    ...Object.values(filters.categories).filter(Boolean)
+    filters.subCategory,
+    filters.destinacionvoyage1,
+    filters.wilaya
   ].filter(Boolean).length;
 
   return (
@@ -187,52 +157,21 @@ export default function SearchPage() {
         <Card.Body className="p-3">
           <Form onSubmit={handleSearch}>
             {/* 🔹 Búsqueda Principal Compacta */}
-            <Form.Group className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <Form.Label className="fw-semibold text-dark mb-0 small">
-                  {t('searchLabel')}
-                </Form.Label>
-                {activeFiltersCount > 0 && (
-                  <Badge bg="primary" className="fs-6">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </div>
-              <InputGroup size="md">
-                <Form.Control
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={search}
-                  onChange={(e) => handleUserSearch(e.target.value)}
-                  className="border-end-0"
-                />
-                {search && (
-                  <Button 
-                    variant="outline-secondary" 
-                    onClick={handleCloseUsers}
-                    className="border-start-0 px-3"
-                    size="sm"
-                  >
-                    <i className="fas fa-times small"></i>
-                  </Button>
-                )}
-              </InputGroup>
-            </Form.Group>
-
+           
             {/* 🔹 Dropdown usuarios compacto */}
             {search && users.length > 0 && (
               <Card className="mb-2 border-primary">
                 <Card.Header className="bg-primary text-white py-1 px-2">
                   <small className="fw-bold">
                     <i className="fas fa-users me-1"></i>
-                    {t('artistsFound')} ({users.length})
+                    {t('travelAgenciesFound')} ({users.length})
                   </small>
                 </Card.Header>
                 <ListGroup variant="flush" className="max-h-200 overflow-auto">
                   {userLoading && (
                     <ListGroup.Item className="text-center py-2">
                       <Spinner animation="border" size="sm" className="me-2" />
-                      <small>{t('searchingArtists')}</small>
+                      <small>{t('searchingAgencies')}</small>
                     </ListGroup.Item>
                   )}
                   {users.map((user) => (
@@ -249,175 +188,109 @@ export default function SearchPage() {
               </Card>
             )}
 
-            {/* 🔹 Acordeón Compacto para Filtros */}
-            <Accordion className="mb-3" defaultActiveKey={[]} alwaysOpen>
-              {/* Categorías Compactas */}
-              <Accordion.Item eventKey="0" className="mb-2">
+            {/* 🔹 Acordeón Compacto para Filtros - SOLO 3 CAMPOS */}
+            <Accordion className="mb-3" defaultActiveKey={['0']} alwaysOpen>
+              <Accordion.Item eventKey="0">
                 <Accordion.Header className="py-2">
                   <div className="d-flex align-items-center w-100">
-                    <i className="fas fa-tags text-primary me-2 fs-6"></i>
-                    <small className="fw-semibold">{t('categories.title')}</small>
-                    {Object.values(filters.categories).filter(Boolean).length > 0 && (
+                    <i className="fas fa-filter text-primary me-2 fs-6"></i>
+                    <small className="fw-semibold">{t('filters.title')}</small>
+                    {activeFiltersCount > 0 && (
                       <Badge bg="primary" className="ms-2 fs-6">
-                        {Object.values(filters.categories).filter(Boolean).length}
+                        {activeFiltersCount}
                       </Badge>
                     )}
                   </div>
                 </Accordion.Header>
                 <Accordion.Body className="p-2">
-                  <Row className="g-1">
-                    {Object.keys(filters.categories).map((cat) => (
-                      <Col xs={6} sm={4} key={cat}>
-                        <Form.Check
-                          type="checkbox"
-                          id={cat}
-                          name={cat}
-                          label={<small>{t(`categories.${cat}`)}</small>}
-                          checked={filters.categories[cat]}
-                          onChange={(e) => updateFilter('categories', e.target.name, e.target.checked)}
-                          className="small"
-                        />
-                      </Col>
-                    ))}
-                  </Row>
-                </Accordion.Body>
-              </Accordion.Item>
+                  <Row className="g-2">
+                    {/* 🔹 FILTRO 1: SUBCATEGORÍA - SELECT */}
+                    <Col sm={6}>
+                      <Form.Group className="mb-2">
+                        <Form.Label className="small fw-semibold mb-1">
+                          <i className="fas fa-tags text-info me-1"></i>
+                          {t('filters.subCategory')}
+                        </Form.Label>
+                        <Form.Select
+                          value={filters.subCategory}
+                          onChange={(e) => updateFilter('subCategory', e.target.value)}
+                          size="sm"
+                        >
+                          <option value="">{t('filters.selectSubCategory')}</option>
+                          {subCategoryOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
 
-              {/* Filtros Avanzados Compactos */}
-              <Accordion.Item eventKey="1">
-                <Accordion.Header className="py-2">
-                  <div className="d-flex align-items-center w-100">
-                    <i className="fas fa-sliders-h text-warning me-2 fs-6"></i>
-                    <small className="fw-semibold">{t('advancedSearch.title')}</small>
-                  </div>
-                </Accordion.Header>
-                <Accordion.Body className="p-2">
-                  <Row className="g-2">
+                    {/* 🔹 FILTRO 2: DESTINO DEL VIAJE - SELECT */}
                     <Col sm={6}>
                       <Form.Group className="mb-2">
                         <Form.Label className="small fw-semibold mb-1">
-                          <i className="fas fa-palette text-info me-1"></i>
-                          {t('advancedSearch.theme')}
+                          <i className="fas fa-map-marker-alt text-success me-1"></i>
+                          {t('filters.destination')}
                         </Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder={t('advancedSearch.themePlaceholder')}
-                          value={filters.theme}
-                          onChange={(e) => updateFilter('theme', null, e.target.value)}
+                        <Form.Select
+                          value={filters.destinacionvoyage1}
+                          onChange={(e) => updateFilter('destinacionvoyage1', e.target.value)}
                           size="sm"
-                        />
+                        >
+                          <option value="">{t('filters.selectDestination')}</option>
+                          
+                          {/* Destinos Nacionales */}
+                          <optgroup label={t('filters.nationalDestinations')}>
+                            {destinationOptions[0].options.map((destination) => (
+                              <option key={destination} value={destination}>
+                                {destination}
+                              </option>
+                            ))}
+                          </optgroup>
+                          
+                          {/* Destinos Internacionales */}
+                          <optgroup label={t('filters.internationalDestinations')}>
+                            {destinationOptions[1].options.map((destination) => (
+                              <option key={destination} value={destination}>
+                                {destination}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </Form.Select>
                       </Form.Group>
                     </Col>
-                    <Col sm={6}>
-                      <Form.Group className="mb-2">
-                        <Form.Label className="small fw-semibold mb-1">
-                          <i className="fas fa-brush text-success me-1"></i>
-                          {t('advancedSearch.style')}
+
+                    {/* 🔹 FILTRO 3: WILAYA - INPUT TEXT */}
+                    <Col sm={12}>
+                      <Form.Group className="">
+                        <Form.Label className="small fw-semibold">
+                          <i className="fas fa-globe-americas text-warning me-1"></i>
+                          {t('filters.wilaya')}
                         </Form.Label>
                         <Form.Control
                           type="text"
-                          placeholder={t('advancedSearch.stylePlaceholder')}
-                          value={filters.style}
-                          onChange={(e) => updateFilter('style', null, e.target.value)}
+                          placeholder={t('filters.wilayaPlaceholder')}
+                          value={filters.wilaya}
+                          onChange={(e) => updateFilter('wilaya', e.target.value)}
                           size="sm"
                         />
                       </Form.Group>
                     </Col>
                   </Row>
-                  
-                  <Row className="g-2">
-                    <Col sm={6}>
-                      <Form.Group className="mb-2">
-                        <Form.Label className="small fw-semibold mb-1">
-                          <i className="fas fa-euro-sign text-danger me-1"></i>
-                          {t('advancedSearch.minPrice')}
-                        </Form.Label>
-                        <Form.Control
-                          type="number"
-                          placeholder={t('advancedSearch.minPricePlaceholder')}
-                          value={filters.priceMin}
-                          onChange={(e) => updateFilter('priceMin', null, e.target.value)}
-                          min="0"
-                          size="sm"
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col sm={6}>
-                      <Form.Group className="mb-2">
-                        <Form.Label className="small fw-semibold mb-1">
-                          <i className="fas fa-euro-sign text-success me-1"></i>
-                          {t('advancedSearch.maxPrice')}
-                        </Form.Label>
-                        <Form.Control
-                          type="number"
-                          placeholder={t('advancedSearch.maxPricePlaceholder')}
-                          value={filters.priceMax}
-                          onChange={(e) => updateFilter('priceMax', null, e.target.value)}
-                          min="0"
-                          size="sm"
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Form.Group className="mb-2">
-                    <Form.Label className="small fw-semibold mb-1">
-                      <i className="fas fa-map-marker-alt text-primary me-1"></i>
-                      {t('advancedSearch.location')}
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder={t('advancedSearch.locationPlaceholder')}
-                      value={filters.wilaya}
-                      onChange={(e) => updateFilter('wilaya', null, e.target.value)}
-                      size="sm"
-                    />
-                  </Form.Group>
                 </Accordion.Body>
               </Accordion.Item>
             </Accordion>
 
             {/* 🔹 Botones de Acción Compactos */}
-            <div className="d-flex gap-2">
-              <Button 
-                type="submit" 
-                disabled={loading}
-                variant="primary"
-                size="sm"
-                className="flex-fill"
-              >
-                {loading ? (
-                  <>
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    <small>{t('buttons.searching')}</small>
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-search me-2"></i>
-                    <small>{t('buttons.search')}</small>
-                  </>
-                )}
-              </Button>
-              
-              {activeFiltersCount > 0 && (
-                <Button 
-                  variant="outline-secondary" 
-                  onClick={handleClearFilters}
-                  size="sm"
-                  className="px-3"
-                >
-                  <i className="fas fa-times me-1"></i>
-                  <small>{t('buttons.clear')}</small>
-                </Button>
-              )}
-            </div>
+            
           </Form>
         </Card.Body>
       </Card>
 
       {/* 🔹 Indicadores Compactos */}
       {results.length > 0 && (
-        <Alert variant="info" className="py-2 px-3 mb-3 d-flex align-items-center">
+        <Alert variant="info" className= "px-3  d-flex align-items-center">
           <i className="fas fa-info-circle me-2 fs-6"></i>
           <small className="fw-semibold">
             {t('results.found', { count: results.length })}
@@ -426,16 +299,16 @@ export default function SearchPage() {
       )}
 
       {error && (
-        <Alert variant="danger" className="py-2 px-3 mb-3 d-flex align-items-center">
+        <Alert variant="danger" className="px-3 d-flex align-items-center">
           <i className="fas fa-exclamation-triangle me-2 fs-6"></i>
           <small>{error}</small>
         </Alert>
       )}
 
       {/* 🔹 Lista de Posts */}
-      <div className="mt-3">
+      <div className="">
         {loading ? (
-          <Card className="text-center py-4">
+          <Card className="text-center">
             <Card.Body className="p-3">
               <img src={LoadIcon} alt="loading" width="40" className="mb-2" />
               <h6 className="text-muted mb-1">{t('results.searching')}</h6>
@@ -443,7 +316,7 @@ export default function SearchPage() {
             </Card.Body>
           </Card>
         ) : (
-          <Posts filters={results} />
+          <Posts filters={filters } />
         )}
       </div>
     </Container>
@@ -463,7 +336,7 @@ const styles = `
 }
 .accordion-body {
   padding: 0.5rem;
-}s
+}
 `;
 
 // Agregar estilos al documento

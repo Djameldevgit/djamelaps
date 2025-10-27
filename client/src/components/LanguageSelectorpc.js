@@ -44,9 +44,7 @@ function LanguageSelectorpc() {
     fr: t('language.fr', { lng: lang }),
     ar: t('language.ar', { lng: lang }),
     
- 
-    kab: t('language.kab', { lng: lang }),
- 
+  
   };
 
   return (
@@ -57,7 +55,7 @@ function LanguageSelectorpc() {
       </Dropdown.Toggle>
 
       <Dropdown.Menu className="w-100">
-        {['ar', 'fr',   'kab' ].map((langCode) => (
+        {['ar', 'fr'].map((langCode) => (
           <Dropdown.Item key={langCode} onClick={() => handleLanguageChange(langCode)}>
             <img src={flagPath(langCode)} alt={`${langCode} flag`} style={flagStyle} />
             {languageNames[langCode]}

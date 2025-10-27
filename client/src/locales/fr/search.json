@@ -1,64 +1,39 @@
 {
-  "title": "🔍 Rechercher l'Art",
-  "subtitle": "Découvrez des œuvres d'art et des artistes",
-  "searchPlaceholder": "Ex: Paysage à l'huile, portrait abstrait, sculpture moderne...",
-  "searchLabel": "Que cherchez-vous ?",
-  "searchHelp": "Recherchez par titre, artiste, technique ou description",
-  "artistsFound": "Artistes trouvés",
-  "searchingArtists": "Recherche d'artistes...",
-  "categories": {
-    "title": "Catégories Artistiques",
-    "painting": "Peinture",
-    "sculpture": "Sculpture",
-    "photography": "Photographie",
-    "drawing": "Dessin",
-    "engraving": "Gravure",
-    "digital_art": "Art Numérique",
-    "collage": "Collage",
-    "textile_art": "Art Textile"
-  },
-  "advancedSearch": {
-    "title": "Recherche Avancée",
-    "theme": "Thème",
-    "themePlaceholder": "Ex: nature, abstrait, portrait...",
-    "style": "Style",
-    "stylePlaceholder": "Ex: réalisme, impressionnisme, moderne...",
-    "minPrice": "Prix minimum",
-    "minPricePlaceholder": "Ex: 50",
-    "maxPrice": "Prix maximum",
-    "maxPricePlaceholder": "Ex: 500",
-    "location": "Localisation (Wilaya)",
-    "locationPlaceholder": "Ex: Alger, Oran, Constantine..."
-  },
-  "buttons": {
-    "search": "Rechercher des Œuvres",
-    "searching": "Recherche en cours...",
-    "clear": "Effacer",
-    "close": "×"
-  },
-  "results": {
-    "found": "{{count}} œuvres trouvées correspondant à votre recherche",
-    "searching": "Recherche d'œuvres d'art...",
-    "loading": "Cela peut prendre quelques secondes",
-    "noResults": "Aucune œuvre d'art trouvée correspondant à votre recherche"
-  },
-  "errors": {
-    "searchError": "Erreur de recherche",
-    "userSearchError": "Erreur lors de la recherche d'utilisateurs"
-  },
-  "common": {
-    "loading": "Chargement...",
-    "error": "Erreur",
-    "success": "Succès",
-    "save": "Sauvegarder",
-    "cancel": "Annuler",
-    "delete": "Supprimer",
-    "edit": "Modifier",
-    "yes": "Oui",
-    "no": "Non",
-    "confirm": "Confirmer",
-    "back": "Retour",
-    "next": "Suivant",
-    "previous": "Précédent"
+  
+    "title": "Rechercher des Voyages",
+    "subtitle": "Trouvez votre prochaine destination parfaite",
+    "searchLabel": "Rechercher des agences ou voyages",
+    "searchPlaceholder": "Rechercher par nom, agence...",
+    "travelAgenciesFound": "Agences de Voyage Trouvées",
+    "searchingAgencies": "Recherche d'agences...",
+    
+    "filters": {
+      "title": "Filtres de Recherche",
+      "subCategory": "Type de Voyage",
+      "selectSubCategory": "Sélectionner le type de voyage",
+      "destination": "Destination",
+      "selectDestination": "Sélectionner une destination",
+      "wilaya": "Wilaya/Région",
+      "wilayaPlaceholder": "Ex: Alger, Oran, Constantine...",
+      "nationalDestinations": "Destinations Nationales",
+      "internationalDestinations": "Destinations Internationales"
+    },
+    
+    "buttons": {
+      "search": "Rechercher des Voyages",
+      "searching": "Recherche en cours...",
+      "clear": "Effacer"
+    },
+    
+    "results": {
+      "found": "{{count}} voyages trouvés",
+      "searching": "Recherche de voyages...",
+      "loading": "Veuillez patienter"
+    },
+    
+    "errors": {
+      "userSearchError": "Erreur lors de la recherche d'agences",
+      "searchError": "Erreur dans la recherche de voyages"
+    }
   }
-}
+ 

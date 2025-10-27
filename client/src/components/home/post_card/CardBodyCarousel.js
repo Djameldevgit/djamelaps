@@ -9,11 +9,12 @@ import {
   OverlayTrigger,
   Tooltip,
   Dropdown,
-  Alert
+  Alert,
+  Modal
 } from 'react-bootstrap';
 import LikeButton from '../../LikeButton';
 import { useSelector, useDispatch } from 'react-redux';
-import { likePost, unLikePost, savePost, unSavePost, updatePost } from '../../../redux/actions/postAction';
+import { likePost, unLikePost, savePost, unSavePost, updatePost, deletePost } from '../../../redux/actions/postAction';
 import Carousel from '../../Carousel';
 import AuthModalAddLikesCommentsSave from '../../AuthModalAddLikesCommentsSave';
 import CommentsModal from './CommentsModal';
@@ -21,6 +22,7 @@ import ShareModal from '../../ShareModal';
 import { BASE_URL } from '../../../utils/config';
 import { MESS_TYPES } from '../../../redux/actions/messageAction';
 import { useTranslation } from 'react-i18next';
+import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
 
 const CardBodyCarousel = ({ post, hideCard = false }) => {
     const history = useHistory();
@@ -42,6 +44,8 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
     const [customAlertVariant, setCustomAlertVariant] = useState('info');
     const [isInstallingPWA, setIsInstallingPWA] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false); // 🔷 NUEVO: Modal para confirmar eliminación
 
     // Detectar si estamos en la página de detalle del post
     const isDetailPage = location.pathname === `/post/${post._id}`;
@@ -53,13 +57,93 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
     };
     const getFlexClass = () => isRTL ? 'flex-row-reverse' : 'flex-row';
 
-    // 🔷 NUEVO: Verificar si el usuario puede editar el post (dueño O admin)
+    // 🔷 Verificar si el usuario puede editar/eliminar el post (dueño O admin)
     const canEditPost = auth.user && (
         auth.user._id === post.user?._id || 
         auth.user.role === "admin"
     );
 
-    // 🔷 NUEVO: Escuchar el evento beforeinstallprompt para PWA
+    const canDeletePost = auth.user && (
+        auth.user._id === post.user?._id || 
+        auth.user.role === "admin"
+    );
+
+    // 🔷 NUEVA FUNCIÓN: Eliminar post
+    const handleDeletePost = async () => {
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        if (!canDeletePost) {
+            showAlert(t('not_authorized_delete'), 'warning');
+            return;
+        }
+
+        try {
+            // Cerrar el modal de confirmación
+            setShowDeleteModal(false);
+            
+            // Mostrar alerta de carga
+            showAlert(t('deleting_post'), 'info');
+            
+            // Dispatch de la acción deletePost
+            await dispatch(deletePost({ post, auth }));
+            
+            // Mostrar mensaje de éxito
+            showAlert(t('post_deleted_success'), 'success');
+            
+            // Redirigir a home después de eliminar (opcional)
+            setTimeout(() => {
+                history.push('/');
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            showAlert(t('error_deleting_post'), 'danger');
+        }
+    };
+
+    // 🔷 NUEVA FUNCIÓN: Abrir modal de confirmación para eliminar
+    const handleDeleteClick = (e) => {
+        e?.stopPropagation();
+        
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        if (!canDeletePost) {
+            showAlert(t('not_authorized_delete'), 'warning');
+            return;
+        }
+
+        setShowDeleteModal(true);
+    };
+
+    // 🔷 Función para formatear fecha
+    const formatTravelDate = () => {
+        if (post.datedepar) {
+            return new Date(post.datedepar).toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+        return null;
+    };
+
+    const travelDate = formatTravelDate();
+
+    // 🔷 Función para obtener icono de agencia
+    const getAgencyIcon = () => {
+        if (post.promoteurimmobilier) {
+            return "fas fa-building text-warning";
+        }
+        return "fas fa-plane text-primary";
+    };
+
+    // Resto del código existente (useEffects y funciones) se mantiene igual...
     useEffect(() => {
         const handleBeforeInstallPrompt = (e) => {
             e.preventDefault();
@@ -155,28 +239,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         history.push(`/post/${post._id}`);
     };
 
-    const handleCommentClick = useCallback(() => {
-        if (!auth.token) {
-            setShowAuthModal(true);
-            return;
-        }
-
-        const currentPath = window.location.pathname;
-        const isOnPostDetail = currentPath === `/post/${post._id}`;
-
-        if (isOnPostDetail) {
-            const commentsSection = document.getElementById('comments-section');
-            if (commentsSection) {
-                commentsSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        } else {
-            setShowCommentsModal(true);
-        }
-    }, [auth.token, post._id]);
-
     // 🔷 FUNCIÓN PARA MOSTRAR ALERTAS PERSONALIZADAS
     const showAlert = (message, variant = 'info') => {
         setCustomAlertMessage(message);
@@ -224,18 +286,15 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN: VISITAR APP CON CAMPO LINK
+    // Resto de funciones existentes se mantienen igual...
     const handleVisitApp = (e) => {
         e?.stopPropagation();
-        
-        // Usar el campo 'link' del post, si no existe usar 'productionUrl'
         const appLink = post.link || post.productionUrl;
         
         if (appLink) {
             const finalUrl = appLink.startsWith('http') ? appLink : `https://${appLink}`;
             window.open(finalUrl, '_blank', 'noopener,noreferrer');
             
-            // Analytics
             if (window.gtag) {
                 window.gtag('event', 'visit_app', {
                     'event_category': 'engagement',
@@ -250,7 +309,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN MEJORADA: INSTALAR PWA CON PROMPT NATIVO
     const handleInstallPostPWA = async (e) => {
         e?.stopPropagation();
         
@@ -258,7 +316,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         
         setIsInstallingPWA(true);
 
-        // Obtener el link de la aplicación del post
         const appLink = post.link || post.productionUrl;
         
         if (!appLink) {
@@ -267,7 +324,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
             return;
         }
 
-        // Verificar si estamos en la misma aplicación (evitar auto-instalación)
         try {
             const currentOrigin = window.location.origin;
             const targetOrigin = new URL(appLink).origin;
@@ -282,7 +338,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
 
         try {
-            // Estrategia 1: Intentar usar deferredPrompt si está disponible
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 
@@ -295,15 +350,12 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                 }
                 
                 setDeferredPrompt(null);
-            } 
-            // Estrategia 2: Abrir en nueva pestaña para trigger de instalación PWA
-            else {
+            } else {
                 const newWindow = window.open(appLink, '_blank', 'noopener,noreferrer');
                 
                 if (newWindow) {
                     showAlert(t('opening_app_for_installation'), 'success');
                     
-                    // Cerrar la ventana después de un tiempo si el usuario no la cierra
                     setTimeout(() => {
                         if (newWindow && !newWindow.closed) {
                             newWindow.close();
@@ -312,7 +364,6 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                     }, 8000);
                 } else {
                     showAlert(t('popup_blocked'), 'warning');
-                    // Fallback: abrir en la misma pestaña
                     window.open(appLink, '_blank', 'noopener,noreferrer');
                     showAlert(t('check_browser_menu'), 'info');
                 }
@@ -326,78 +377,63 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 NUEVA FUNCIÓN MEJORADA: EDITAR POST (dueño O admin)
+    // 🔷 **FUNCIÓN DE EDICIÓN MEJORADA**
     const handleEditPost = (e) => {
         e?.stopPropagation();
         
+        console.group('🛠 EDIT POST CLICKED');
+        console.log('📝 Post Data:', post);
+        console.log('👤 Auth User:', auth.user);
+        console.log('🔑 Can Edit Result:', canEditPost);
+        console.groupEnd();
+
         if (!auth.user) {
+            console.log('❌ No user logged in');
             setShowAuthModal(true);
             return;
         }
 
-        // Verificar si el usuario puede editar el post (dueño O admin)
-        if (!canEditPost) {
+        // Verificación directa para mayor seguridad
+        const userCanEdit = auth.user && (
+            auth.user._id === post.user?._id || 
+            auth.user._id === post.user || 
+            auth.user.role === "admin"
+        );
+
+        if (!userCanEdit) {
+            console.log('❌ User cannot edit this post');
             showAlert(t('not_post_owner_or_admin'), 'warning');
             return;
         }
 
-        // Navegar a la página de edición con los datos del post
+        console.log('✅ User CAN edit, navigating to edit page');
+        
+        // 🔷 **CAMBIAR LA RUTA: Usar /createpost en lugar de /editpost/:id**
         history.push('/createpost', { 
-            isEdit: true, 
-            post: post 
-        });
-    };
-
-    // 🔷 FUNCIÓN PARA DESCARGAR APP COMO NATIVA
-    const handleDownloadApp = async (e) => {
-        e.stopPropagation();
-        
-        const isChrome = /Chrome/.test(navigator.userAgent);
-        const isEdge = /Edg/.test(navigator.userAgent);
-        
-        if (!isChrome && !isEdge) {
-            showAlert(t('browser_not_supported'), 'warning');
-        }
-
-        setShowDownloadAlert(true);
-        setDownloadProgress(0);
-
-        const progressInterval = setInterval(() => {
-            setDownloadProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(progressInterval);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 200);
-
-        try {
-            if (post.appDownloadUrl) {
-                window.open(post.appDownloadUrl, '_blank', 'noopener,noreferrer');
-            } else {
-                showAlert(t('no_download_url'), 'info');
+            isEdit: true,
+            postData: {
+                ...post,
+                // Asegurar que todos los campos necesarios estén presentes
+                title: post.title || '',
+                description: post.description || post.content || '',
+                images: post.images || [],
+                category: post.category || 'Agence de Voyage',
+                subCategory: post.subCategory || '',
+                price: post.price || '',
+                wilaya: post.wilaya || '',
+                commune: post.commune || '',
+                contacto: post.contacto || '',
+                datedepar: post.datedepar || '',
+                destinacionvoyage1: post.destinacionvoyage1 || '',
+                duracionviaje: post.duracionviaje || '',
+                transporte: post.transporte || '',
+                // Incluir todos los campos de tu schema
             }
+        });
 
-            setTimeout(() => {
-                setDownloadProgress(100);
-                clearInterval(progressInterval);
-                
-                setTimeout(() => {
-                    setShowDownloadAlert(false);
-                    setDownloadProgress(0);
-                }, 3000);
-            }, 2000);
-
-        } catch (error) {
-            console.error('Error en la descarga:', error);
-            showAlert(t('download_error'), 'danger');
-            clearInterval(progressInterval);
-            setShowDownloadAlert(false);
-        }
+        console.log('🎯 Navegación ejecutada a:', '/createpost');
     };
 
-    // 🔷 AGREGAR OPCIÓN DE CHAT Y EDITAR AL MENÚ DE TRES PUNTOS
     const handleThreeDotsMenu = (action) => {
         switch (action) {
             case 'contact':
@@ -411,6 +447,9 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
                 break;
             case 'edit':
                 handleEditPost();
+                break;
+            case 'delete': // 🔷 NUEVO: Opción eliminar
+                handleDeleteClick();
                 break;
             case 'details':
                 handleViewDetails();
@@ -426,7 +465,43 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         }
     };
 
-    // 🔷 SI ESTAMOS EN LA PÁGINA DE DETALLE Y hideCard ES true, NO MOSTRAR EL CARD
+    // 🔷 NUEVA FUNCIÓN: Compartir en redes sociales
+    const handleShare = (platform) => {
+        const postUrl = `${BASE_URL}/post/${post._id}`;
+        const shareText = `🌍 ${post.title} - Agencia de Viajes`;
+        
+        let shareUrl = '';
+        
+        switch (platform) {
+            case 'whatsapp':
+                shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + postUrl)}`;
+                break;
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+                break;
+            case 'tiktok':
+                // TikTok no tiene API directa de sharing, abrir app o web
+                shareUrl = `https://www.tiktok.com/share?url=${encodeURIComponent(postUrl)}`;
+                break;
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(postUrl)}`;
+                break;
+            case 'telegram':
+                shareUrl = `https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(shareText)}`;
+                break;
+            case 'copy':
+                navigator.clipboard.writeText(postUrl);
+                showAlert('Enlace copiado al portapapeles', 'success');
+                setShowShareModal(false);
+                return;
+            default:
+                return;
+        }
+        
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+        setShowShareModal(false);
+    };
+
     if (isDetailPage && hideCard) {
         return null;
     }
@@ -435,12 +510,14 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
         <>
             <Card className="border-0 shadow-sm" style={{
                 background: theme ? 'rgba(30, 30, 30, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-                backdropFilter: 'blur(10px)'
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                overflow: 'hidden'
             }}>
-                <Card.Body className="p-3">
+                <Card.Body className="p-0">
                     {/* Alert de descarga */}
                     {showDownloadAlert && (
-                        <Alert variant="info" className="py-2 mb-3">
+                        <Alert variant="info" className="py-2 m-3 mb-0">
                             <div className="d-flex align-items-center justify-content-between">
                                 <span>{t('downloading_app')}</span>
                                 <small>{downloadProgress}%</small>
@@ -456,261 +533,632 @@ const CardBodyCarousel = ({ post, hideCard = false }) => {
 
                     {/* Alert personalizado para mensajes */}
                     {showCustomAlert && (
-                        <Alert variant={customAlertVariant} className="py-2 mb-3">
+                        <Alert variant={customAlertVariant} className="py-2 m-3 mb-0">
                             {customAlertMessage}
                         </Alert>
                     )}
 
-                    {/* Header con título y acciones - SIMPLIFICADO */}
-                    <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
-                        <Col>
-                            <div className={`d-flex align-items-center gap-2 ${getFlexClass()}`}>
-                                {/* Icono de aplicación web */}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={<Tooltip>{t('web_application')}</Tooltip>}
-                                >
-                                    <i 
-                                        className="fas fa-globe text-primary"
-                                        style={{ fontSize: '1.1rem' }}
-                                    />
-                                </OverlayTrigger>
-                                
-                                <div style={{ flex: 1 }}>
-                                    <Card.Title 
-                                        className="mb-0" 
-                                        style={{
-                                            fontSize: '1.1rem',
-                                            fontWeight: '700',
-                                            color: theme ? '#fff' : '#1a1a1a',
-                                            lineHeight: '1.3',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis'
-                                        }}
-                                    >
-                                        {post.title}
-                                    </Card.Title>
-                                    
-                                    {/* Badge del tipo de aplicación */}
-                                    {post.appType && (
-                                        <Badge 
-                                            bg="outline-primary" 
-                                            text="primary" 
-                                            className="mt-1"
+                    {/* 🔷 HEADER MEJORADO Y ESTILIZADO */}
+                    <div className="p-3 pb-2">
+                        <Row className={`align-items-start ${getFlexClass()}`}>
+                            <Col>
+                                <div className={`d-flex align-items-start gap-3 ${getFlexClass()}`}>
+                                    {/* Icono de agencia con mejor estilo */}
+                                    <div className="flex-shrink-0">
+                                        <div 
                                             style={{
-                                                border: '1px solid #007bff',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '500'
+                                                width: '50px',
+                                                height: '50px',
+                                                borderRadius: '12px',
+                                                background: theme 
+                                                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%)' 
+                                                    : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: theme ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)'
                                             }}
                                         >
-                                            {t(`createpost:app_${post.appType.replace(/-/g, '_')}`, post.appType)}
-                                        </Badge>
-                                    )}
+                                            <i 
+                                                className={getAgencyIcon()}
+                                                style={{ 
+                                                    fontSize: '1.3rem',
+                                                    background: 'linear-gradient(135deg, #3b82f6, #9333ea)',
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Título e información mejorados */}
+                                    <div style={{ flex: 1 }}>
+                                        <Card.Title 
+                                            className="mb-2" 
+                                            style={{
+                                                fontSize: '1.2rem',
+                                                fontWeight: '800',
+                                                color: theme ? '#fff' : '#1a1a1a',
+                                                lineHeight: '1.3',
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}
+                                        >
+                                            {post.category}
+                                        </Card.Title>
+                                        
+                                        {/* Información del viaje en fila compacta */}
+                                        <div className="d-flex flex-wrap align-items-center gap-3">
+                                            {/* 🔷 FECHA DEL VIAJE */}
+                                            {travelDate && (
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <i className="far fa-calendar-alt text-primary small" />
+                                                    <small className="fw-semibold" style={{
+                                                        color: theme ? '#ccc' : '#666'
+                                                    }}>
+                                                        {travelDate}
+                                                    </small>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Destino del viaje */}
+                                            {(post.destinacionvoyage1 || post.destinacionhadj) && (
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <i className="fas fa-map-marker-alt text-danger small" />
+                                                    <small className="fw-semibold" style={{
+                                                        color: theme ? '#ccc' : '#666'
+                                                    }}>
+                                                        {post.destinacionvoyage1 || post.destinacionhadj}
+                                                    </small>
+                                                </div>
+                                            )}
+
+                                            {/* Precio si está disponible */}
+                                            {post.price && (
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <i className="fas fa-tag text-success small" />
+                                                    <small className="fw-bold text-success">
+                                                        {post.price} {post.priceType}
+                                                    </small>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Badge del tipo de aplicación */}
+                                        {post.appType && (
+                                            <Badge 
+                                                bg="primary"
+                                                className="mt-2"
+                                                style={{
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: '600',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '8px',
+                                                    background: 'linear-gradient(135deg, #3b82f6, #9333ea)',
+                                                    border: 'none'
+                                                }}
+                                            >
+                                                {t(`createpost:app_${post.appType.replace(/-/g, '_')}`, post.appType)}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </Col>
-                        
-                        <Col xs="auto">
-                            {/* SOLO EL ICONO DE TRES PUNTOS EN EL HEADER */}
-                            <Dropdown>
-                                <Dropdown.Toggle 
-                                    variant={theme ? "dark" : "light"} 
-                                    size="sm"
-                                    className="border-0 shadow-none"
-                                    style={{
-                                        background: 'transparent',
-                                        padding: '4px 8px'
-                                    }}
-                                >
-                                    <i className="fas fa-ellipsis-h text-muted" />
-                                </Dropdown.Toggle>
-
-                                <Dropdown.Menu className={theme ? 'bg-dark text-light' : ''}>
-                                    {/* Chat con el dueño */}
-                                    <Dropdown.Item 
-                                        onClick={() => handleThreeDotsMenu('contact')}
-                                        className={theme ? 'text-light' : ''}
+                            </Col>
+                            
+                            <Col xs="auto">
+                                {/* Menú de tres puntos mejorado */}
+                                <Dropdown>
+                                    <Dropdown.Toggle 
+                                        variant={theme ? "dark" : "light"} 
+                                        size="sm"
+                                        className="border-0 shadow-none"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                            padding: '8px',
+                                            borderRadius: '10px',
+                                            width: '36px',
+                                            height: '36px'
+                                        }}
                                     >
-                                        <i className={getIconClass("fas fa-comments")} />
-                                        {t('chat_with_developer')}
-                                    </Dropdown.Item>
+                                        <i className="fas fa-ellipsis-h" style={{
+                                            color: theme ? '#fff' : '#666'
+                                        }} />
+                                    </Dropdown.Toggle>
 
-                                    {/* Instalar PWA */}
-                                    <Dropdown.Item 
-                                        onClick={() => handleThreeDotsMenu('install')}
-                                        className={theme ? 'text-light' : ''}
-                                        disabled={isInstallingPWA}
-                                    >
-                                        <i className={getIconClass(isInstallingPWA ? "fas fa-spinner fa-spin" : "fas fa-rocket")} />
-                                        {isInstallingPWA ? t('installing_app') : t('install_this_app')}
-                                    </Dropdown.Item>
-
-                                    {/* Visitar aplicación */}
-                                    <Dropdown.Item 
-                                        onClick={() => handleThreeDotsMenu('visit')}
-                                        className={theme ? 'text-light' : ''}
-                                    >
-                                        <i className={getIconClass("fas fa-external-link-alt")} />
-                                        {t('visit_live_app')}
-                                    </Dropdown.Item>
-
-                                    <Dropdown.Divider />
-
-                                    {/* Editar post (solo para dueño O admin) */}
-                                    {canEditPost && (
+                                    <Dropdown.Menu className={theme ? 'bg-dark text-light border-0 shadow-lg' : 'shadow-lg border-0'}>
+                                        {/* Opciones del menú... */}
                                         <Dropdown.Item 
-                                            onClick={() => handleThreeDotsMenu('edit')}
+                                            onClick={() => handleThreeDotsMenu('contact')}
                                             className={theme ? 'text-light' : ''}
                                         >
-                                            <i className={getIconClass("fas fa-edit")} />
-                                            {auth.user.role === "admin" ? `${t('edit_post')} (Admin)` : t('edit_post')}
+                                            <i className={getIconClass("fas fa-comments")} />
+                                            {t('chat_with_developer')}
                                         </Dropdown.Item>
-                                    )}
 
-                                    {/* Ver detalles */}
-                                    <Dropdown.Item 
-                                        onClick={() => handleThreeDotsMenu('details')}
-                                        className={theme ? 'text-light' : ''}
-                                    >
-                                        <i className={getIconClass("fas fa-info-circle")} />
-                                        {t('view_details')}
-                                    </Dropdown.Item>
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('install')}
+                                            className={theme ? 'text-light' : ''}
+                                            disabled={isInstallingPWA}
+                                        >
+                                            <i className={getIconClass(isInstallingPWA ? "fas fa-spinner fa-spin" : "fas fa-rocket")} />
+                                            {isInstallingPWA ? t('installing_app') : t('install_this_app')}
+                                        </Dropdown.Item>
 
-                                    {/* Compartir */}
-                                    <Dropdown.Item 
-                                        onClick={() => setIsShare(true)}
-                                        className={theme ? 'text-light' : ''}
-                                    >
-                                        <i className={getIconClass("fas fa-share")} />
-                                        {t('share')}
-                                    </Dropdown.Item>
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('visit')}
+                                            className={theme ? 'text-light' : ''}
+                                        >
+                                            <i className={getIconClass("fas fa-external-link-alt")} />
+                                            {t('visit_live_app')}
+                                        </Dropdown.Item>
 
-                                    <Dropdown.Divider />
+                                        <Dropdown.Divider />
 
-                                    {/* Reportar */}
-                                    <Dropdown.Item 
-                                        onClick={() => handleThreeDotsMenu('report')}
-                                        className="text-danger"
-                                    >
-                                        <i className={getIconClass("fas fa-flag")} />
-                                        {t('report')}
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </Col>
-                    </Row>
+                                        {canEditPost && (
+                                            <>
+                                                <Dropdown.Item 
+                                                    onClick={() => handleThreeDotsMenu('edit')}
+                                                    className={theme ? 'text-light' : ''}
+                                                >
+                                                    <i className={getIconClass("fas fa-edit")} />
+                                                    {auth.user.role === "admin" ? `${t('edit_post')} (Admin)` : t('edit_post')}
+                                                </Dropdown.Item>
+                                                
+                                                {/* 🔷 NUEVO: Opción Eliminar Post */}
+                                                <Dropdown.Item 
+                                                    onClick={() => handleThreeDotsMenu('delete')}
+                                                    className="text-danger"
+                                                >
+                                                    <i className={getIconClass("fas fa-trash-alt")} />
+                                                    {auth.user.role === "admin" ? `${t('delete_post')} (Admin)` : t('delete_post')}
+                                                </Dropdown.Item>
+                                                
+                                                <Dropdown.Divider />
+                                            </>
+                                        )}
 
-                    {/* Carousel */}
-                    <div 
-                        className="card-image mb-3 rounded overflow-hidden"
-                        onClick={() => !isDetailPage && history.push(`/post/${post._id}`)}
-                        style={{ cursor: isDetailPage ? 'default' : 'pointer' }}
-                    >
-                        <Carousel images={post.images} id={post._id} />
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('details')}
+                                            className={theme ? 'text-light' : ''}
+                                        >
+                                            <i className={getIconClass("fas fa-info-circle")} />
+                                            {t('view_details')}
+                                        </Dropdown.Item>
+
+                                        <Dropdown.Divider />
+
+                                        <Dropdown.Item 
+                                            onClick={() => handleThreeDotsMenu('report')}
+                                            className="text-danger"
+                                        >
+                                            <i className={getIconClass("fas fa-flag")} />
+                                            {t('report')}
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </Col>
+                        </Row>
                     </div>
 
-                    {/* Acciones - SOLO SI NO ESTAMOS EN DETALLE */}
-                    {!isDetailPage && (
-                        <>
-                            <Row className={`align-items-center mb-3 ${getFlexClass()}`}>
-                                <Col>
-                                    <div className={`d-flex align-items-center gap-3 ${getFlexClass()}`}>
-                                        <div className="d-flex align-items-center gap-2">
+                    {/* 🔷 CONTENEDOR DEL CAROUSEL CON ICONOS SUPERPUESTOS */}
+                    <div className="position-relative">
+                        {/* Carousel */}
+                        <div 
+                            className="card-image"
+                            onClick={() => !isDetailPage && history.push(`/post/${post._id}`)}
+                            style={{ cursor: isDetailPage ? 'default' : 'pointer' }}
+                        >
+                            <Carousel images={post.images} id={post._id} />
+                        </div>
+
+                        {/* 🔷 ICONOS EN COLUMNA A LA DERECHA - SOLO LIKE, SAVE Y SHARE */}
+                        {!isDetailPage && (
+                            <div 
+                                className="position-absolute"
+                                style={{
+                                    bottom: '20px',
+                                    right: '15px',
+                                    zIndex: 10
+                                }}
+                            >
+                                <div className="d-flex flex-column align-items-center gap-3">
+                                    {/* Like */}
+                                    <div className="text-center">
+                                        <div 
+                                            style={{
+                                                background: 'rgba(0, 0, 0, 0.7)',
+                                                borderRadius: '50%',
+                                                width: '48px',
+                                                height: '48px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backdropFilter: 'blur(10px)',
+                                                border: '1px solid rgba(255,255,255,0.2)'
+                                            }}
+                                        >
                                             <LikeButton
                                                 isLike={isLike}
                                                 handleLike={handleLike}
                                                 handleUnLike={handleUnLike}
+                                                size="lg"
+                                                iconStyle={{ 
+                                                    color: '#fff',
+                                                    fontSize: '1.2rem'
+                                                }}
                                             />
-                                            <span className="text-muted small fw-semibold">
-                                                {post.likes.length}
-                                            </span>
                                         </div>
-                                        
                                         <div 
-                                            className="d-flex align-items-center gap-2"
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={handleCommentClick}
+                                            className="fw-bold mt-1 small"
+                                            style={{ 
+                                                color: '#fff',
+                                                textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+                                            }}
                                         >
-                                            <OverlayTrigger
-                                                placement="top"
-                                                overlay={<Tooltip>{t('comment')}</Tooltip>}
-                                            >
-                                                <i className="far fa-comment text-muted" />
-                                            </OverlayTrigger>
-                                            <span className="text-muted small fw-semibold">
-                                                {post.comments?.length || 0}
-                                            </span>
+                                            {post.likes.length}
                                         </div>
-
-                                        {/* COMPARTIR SE MANTIENE AQUÍ ABAJO */}
-                                        <OverlayTrigger
-                                            placement="top"
-                                            overlay={<Tooltip>{t('share')}</Tooltip>}
-                                        >
-                                            <i 
-                                                className="fas fa-share-alt text-muted"
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => setIsShare(!isShare)}
-                                            />
-                                        </OverlayTrigger>
                                     </div>
-                                </Col>
-                                
-                                <Col xs="auto">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <OverlayTrigger
-                                            placement="top"
-                                            overlay={<Tooltip>{saved ? t('unsave_post') : t('save_post')}</Tooltip>}
+
+                                    {/* Save */}
+                                    <div className="text-center">
+                                        <div 
+                                            style={{
+                                                background: 'rgba(0, 0, 0, 0.7)',
+                                                borderRadius: '50%',
+                                                width: '48px',
+                                                height: '48px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backdropFilter: 'blur(10px)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={saved ? handleUnSavePost : handleSavePost}
                                         >
                                             <i 
-                                                className={saved ? "fas fa-bookmark text-warning" : "far fa-bookmark text-muted"}
-                                                style={{ cursor: 'pointer', fontSize: '1.1rem' }}
-                                                onClick={saved ? handleUnSavePost : handleSavePost}
+                                                className={saved ? "fas fa-bookmark" : "far fa-bookmark"}
+                                                style={{ 
+                                                    fontSize: '1.2rem',
+                                                    color: saved ? '#ffc107' : '#fff'
+                                                }}
                                             />
-                                        </OverlayTrigger>
-                                        <span className="text-muted small fw-semibold">
+                                        </div>
+                                        <div 
+                                            className="fw-bold mt-1 small"
+                                            style={{ 
+                                                color: '#fff',
+                                                textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+                                            }}
+                                        >
                                             {post.saves || 0}
-                                        </span>
+                                        </div>
                                     </div>
-                                </Col>
-                            </Row>
 
-                            {/* Botón Ver Detalles - SOLO SI NO ESTAMOS EN DETALLE */}
+                                    {/* Share */}
+                                    <div className="text-center">
+                                        <div 
+                                            style={{
+                                                background: 'rgba(0, 0, 0, 0.7)',
+                                                borderRadius: '50%',
+                                                width: '48px',
+                                                height: '48px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backdropFilter: 'blur(10px)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => setShowShareModal(true)}
+                                        >
+                                            <i 
+                                                className="fas fa-share-alt"
+                                                style={{ 
+                                                    fontSize: '1.2rem',
+                                                    color: '#fff'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 🔷 BOTÓN VER DETALLES DEBAJO DEL CAROUSEL */}
+                    {!isDetailPage && (
+                        <div className="p-3 pt-2">
                             <Button
-                                variant="outline-primary"
-                                className="w-100 py-2"
+                                variant="primary"
+                                className="w-100 py-3"
                                 onClick={handleViewDetails}
                                 style={{
-                                    fontWeight: '600',
-                                    borderRadius: '8px',
-                                    borderWidth: '2px',
-                                    transition: 'all 0.2s ease'
+                                    fontWeight: '700',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: 'linear-gradient(135deg, #3b82f6, #9333ea)',
+                                    fontSize: '1rem',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.4)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
                                 }}
                             >
-                                <i className={getIconClass("fas fa-external-link-alt")} />
+                                <i className={getIconClass("fas fa-eye")} />
                                 {t('view_full_details')}
                             </Button>
-                        </>
+                        </div>
                     )}
                 </Card.Body>
 
-                {/* Modales */}
-                <CommentsModal
-                    show={showCommentsModal}
-                    onHide={() => setShowCommentsModal(false)}
-                    post={post}
-                    onClick={handleCommentClick}
-                />
+                {/* 🔷 NUEVO: Modal de confirmación para eliminar post */}
+                <Modal 
+                    show={showDeleteModal} 
+                    onHide={() => setShowDeleteModal(false)}
+                    centered
+                    className={theme ? 'dark-modal' : ''}
+                >
+                    <Modal.Header 
+                        closeButton 
+                        className={theme ? 'bg-dark text-light border-secondary' : ''}
+                    >
+                        <Modal.Title>
+                            <i className={getIconClass("fas fa-exclamation-triangle text-warning")} />
+                            {t('confirm_delete')}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className={theme ? 'bg-dark text-light' : ''}>
+                        <div className="text-center">
+                            <i className="fas fa-trash-alt text-danger mb-3" style={{ fontSize: '3rem' }} />
+                            <h5 className="mb-3">{t('delete_post_question')}</h5>
+                            <p className="text-muted">
+                                "{post.title || post.category}"
+                            </p>
+                            <p className="small text-warning">
+                                <i className="fas fa-exclamation-circle me-2" />
+                                {t('delete_warning')}
+                            </p>
+                        </div>
+                    </Modal.Body>
+                    <Modal.Footer className={theme ? 'bg-dark border-secondary' : ''}>
+                        <Button 
+                            variant="secondary" 
+                            onClick={() => setShowDeleteModal(false)}
+                            className="px-4"
+                        >
+                            <i className={getIconClass("fas fa-times")} />
+                            {t('cancel')}
+                        </Button>
+                        <Button 
+                            variant="danger" 
+                            onClick={handleDeletePost}
+                            className="px-4"
+                        >
+                            <i className={getIconClass("fas fa-trash-alt")} />
+                            {t('delete_confirm')}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
 
-                {isShare && (
-                    <ShareModal 
-                        url={`${BASE_URL}/post/${post._id}`} 
-                        onClose={() => setIsShare(false)}
-                    />
-                )}
+                {/* 🔷 MODAL DE COMPARTIR PROFESIONAL */}
+                <Modal 
+                    show={showShareModal} 
+                    onHide={() => setShowShareModal(false)}
+                    centered
+                    className={theme ? 'dark-modal' : ''}
+                >
+                    <Modal.Header 
+                        closeButton 
+                        className={theme ? 'bg-dark text-light border-secondary' : ''}
+                    >
+                        <Modal.Title>
+                            <i className={getIconClass("fas fa-share-alt")} />
+                            Compartir Viaje
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className={theme ? 'bg-dark text-light' : ''}>
+                        <div className="text-center">
+                            <p className="mb-4">Comparte este increíble viaje con tus amigos</p>
+                            
+                            <div className="row g-3">
+                                {/* WhatsApp */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(37, 211, 102, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(37, 211, 102, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('whatsapp')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(37, 211, 102, 0.2)' 
+                                                : 'rgba(37, 211, 102, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(37, 211, 102, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fab fa-whatsapp mb-2" 
+                                            style={{ fontSize: '2rem', color: '#25D366' }}
+                                        />
+                                        <div className="small fw-semibold">WhatsApp</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Facebook */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(59, 89, 152, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(59, 89, 152, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('facebook')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(59, 89, 152, 0.2)' 
+                                                : 'rgba(59, 89, 152, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(59, 89, 152, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fab fa-facebook mb-2" 
+                                            style={{ fontSize: '2rem', color: '#3b5998' }}
+                                        />
+                                        <div className="small fw-semibold">Facebook</div>
+                                    </div>
+                                </div>
+                                
+                                {/* TikTok */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(0, 0, 0, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0, 0, 0, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('tiktok')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(0, 0, 0, 0.2)' 
+                                                : 'rgba(0, 0, 0, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(0, 0, 0, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fab fa-tiktok mb-2" 
+                                            style={{ fontSize: '2rem', color: '#000' }}
+                                        />
+                                        <div className="small fw-semibold">TikTok</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Twitter */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(29, 161, 242, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(29, 161, 242, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('twitter')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(29, 161, 242, 0.2)' 
+                                                : 'rgba(29, 161, 242, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(29, 161, 242, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fab fa-twitter mb-2" 
+                                            style={{ fontSize: '2rem', color: '#1da1f2' }}
+                                        />
+                                        <div className="small fw-semibold">Twitter</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Telegram */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(0, 136, 204, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0, 136, 204, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('telegram')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(0, 136, 204, 0.2)' 
+                                                : 'rgba(0, 136, 204, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(0, 136, 204, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fab fa-telegram mb-2" 
+                                            style={{ fontSize: '2rem', color: '#0088cc' }}
+                                        />
+                                        <div className="small fw-semibold">Telegram</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Copiar enlace */}
+                                <div className="col-4">
+                                    <div 
+                                        className="share-option p-3 rounded-3 text-center cursor-pointer"
+                                        style={{
+                                            background: theme ? 'rgba(255,255,255,0.1)' : 'rgba(108, 117, 125, 0.1)',
+                                            border: theme ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(108, 117, 125, 0.3)',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => handleShare('copy')}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-5px)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(108, 117, 125, 0.2)' 
+                                                : 'rgba(108, 117, 125, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.background = theme 
+                                                ? 'rgba(255,255,255,0.1)' 
+                                                : 'rgba(108, 117, 125, 0.1)';
+                                        }}
+                                    >
+                                        <i 
+                                            className="fas fa-link mb-2" 
+                                            style={{ fontSize: '2rem', color: theme ? '#fff' : '#6c757d' }}
+                                        />
+                                        <div className="small fw-semibold">Copiar</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Modal.Body>
+                </Modal>
             </Card>
 
             <AuthModalAddLikesCommentsSave

@@ -239,17 +239,7 @@ const profileinfouser = () => {
             <Row>
               <Col lg={6}>
 
-                {(userRole === "admin") && (
-                  <Section>
-                    <MenuOption
-                      icon={FaPlus}
-                      iconColor="#667eea"
-                      title={t('addPost', 'Agregar Post')}
-                      onClick={openStatusModal}
-                    />
-                  </Section>
-                )}
-
+              
                 {/* Menú Principal */}
                 <Section  >
 
@@ -295,7 +285,12 @@ const profileinfouser = () => {
 
 
 
-
+<MenuOption
+                      icon={FaTools}
+                      iconColor="#6c757d"
+                      title={t('roles', 'Roles')}
+                      to="/users/roles"
+                    />
 
 
 

@@ -9,10 +9,11 @@ const OptionsModal = ({
   isPostOwner,
   saved,
   saveLoad,
-  t, // Hacer opcional
+  t,
   onOptionClick,
   onAprove,
-  onChatWithAdmin
+  onChatWithAdmin,
+  onEditPost // 🔷 RECIBIR LA FUNCIÓN DE EDICIÓN
 }) => {
   if (!show) return null;
 
@@ -22,7 +23,6 @@ const OptionsModal = ({
       return t(key);
     }
     
-    // Traducciones por defecto en inglés
     const defaultTranslations = {
       'approvePublication': 'Approve Publication',
       'editPublication': 'Edit Publication',
@@ -88,19 +88,22 @@ const OptionsModal = ({
                 gap: '12px',
                 transition: 'background-color 0.2s ease'
               }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               <span className="material-icons" style={{ color: '#666' }}>
                 check_circle
               </span>
-              {translate('approvePublication')} {/* ✅ Usar translate */}
+              {translate('approvePublication')}
             </button>
           )}
 
           {/* Opciones para el dueño del post o admin */}
           {(isPostOwner || isAdmin) && (
             <>
-              <button
-                onClick={() => onOptionClick('edit')}
+              {/* 🔷 BOTÓN EDITAR - AHORA CON onClick CORRECTO */}
+              <button 
+                onClick={onEditPost} // 🔷 USA LA FUNCIÓN PASADA COMO PROP
                 style={{
                   background: 'none',
                   border: 'none',
@@ -114,11 +117,13 @@ const OptionsModal = ({
                   gap: '12px',
                   transition: 'background-color 0.2s ease'
                 }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 <span className="material-icons" style={{ color: '#666' }}>
                   edit
                 </span>
-                {translate('editPublication')} {/* ✅ Usar translate */}
+                {translate('editPublication')}
               </button>
 
               <button
@@ -136,16 +141,18 @@ const OptionsModal = ({
                   gap: '12px',
                   transition: 'background-color 0.2s ease'
                 }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(231, 76, 60, 0.1)'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 <span className="material-icons" style={{ color: '#e74c3c' }}>
                   delete
                 </span>
-                {translate('deletePublication')} {/* ✅ Usar translate */}
+                {translate('deletePublication')}
               </button>
             </>
           )}
 
-          {/* Opciones para todos los usuarios */}
+          {/* Resto de opciones... */}
           <button
             onClick={() => onOptionClick('share')}
             style={{
@@ -161,11 +168,13 @@ const OptionsModal = ({
               gap: '12px',
               transition: 'background-color 0.2s ease'
             }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             <span className="material-icons" style={{ color: '#666' }}>
               share
             </span>
-            {translate('sharePublication')} {/* ✅ Usar translate */}
+            {translate('sharePublication')}
           </button>
 
           <button
@@ -183,15 +192,18 @@ const OptionsModal = ({
               gap: '12px',
               transition: 'background-color 0.2s ease'
             }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             <span className="material-icons" style={{ color: '#666' }}>
               admin_panel_settings
             </span>
-            {translate('contactAdmin')} {/* ✅ Usar translate */}
+            {translate('contactAdmin')}
           </button>
 
           <button
             onClick={() => onOptionClick('save')}
+            disabled={saveLoad}
             style={{
               background: 'none',
               border: 'none',
@@ -199,18 +211,48 @@ const OptionsModal = ({
               textAlign: 'left',
               fontSize: '16px',
               color: '#333',
-              cursor: 'pointer',
+              cursor: saveLoad ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              transition: 'background-color 0.2s ease'
+              transition: 'background-color 0.2s ease',
+              opacity: saveLoad ? 0.6 : 1
             }}
+            onMouseEnter={(e) => !saveLoad && (e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)')}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             <span className="material-icons" style={{ color: '#666' }}>
               {saved ? 'bookmark' : 'bookmark_border'}
             </span>
-            {saved ? translate('saved') : translate('savePublication')} {/* ✅ Usar translate */}
+            {saveLoad ? 'Loading...' : (saved ? translate('saved') : translate('savePublication'))}
           </button>
+
+          {/* Opción reportar para usuarios no propietarios */}
+          {!isPostOwner && !isAdmin && (
+            <button
+              onClick={() => onOptionClick('report')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '16px 24px',
+                textAlign: 'left',
+                fontSize: '16px',
+                color: '#e74c3c',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(231, 76, 60, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              <span className="material-icons" style={{ color: '#e74c3c' }}>
+                flag
+              </span>
+              {translate('reportPublication')}
+            </button>
+          )}
 
           <div style={{ padding: '8px 16px', marginTop: '8px' }}>
             <button
@@ -227,8 +269,10 @@ const OptionsModal = ({
                 fontWeight: '600',
                 transition: 'background-color 0.2s ease'
               }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
             >
-              {translate('cancel')} {/* ✅ Usar translate */}
+              {translate('cancel')}
             </button>
           </div>
         </div>
